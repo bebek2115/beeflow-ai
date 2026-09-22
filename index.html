@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BeeFlow AI — Twój cyfrowy handlowiec 24/7</title>
+  <title>BeeFlow AI v6 — Twój cyfrowy handlowiec 24/7</title>
   <meta name="description" content="BeeFlow AI pomaga małym firmom zdobywać klientów 24/7 dzięki nowoczesnym stronom, czatowi AI i automatyzacji leadów." />
   <style>
     :root{
@@ -21,7 +21,7 @@
     .pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:34px}.price{position:relative}.popular{border-color:#7a631a;box-shadow:0 0 0 1px rgba(245,184,0,.18),0 24px 60px rgba(0,0,0,.25)}.badge{position:absolute;right:18px;top:18px;background:var(--accent);color:#111;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:900}.money{font-size:40px;font-weight:900;margin:12px 0}.money small{font-size:14px;color:var(--muted);font-weight:500}.feat{list-style:none;padding:0;margin:20px 0}.feat li{padding:8px 0;color:#ccd4dc}.feat li:before{content:"✓";color:var(--good);margin-right:10px;font-weight:900}.price .btn{width:100%}
     .contact{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}.form{background:#11161c;border:1px solid var(--line);border-radius:20px;padding:22px}.form input,.form textarea,.form select{width:100%;margin:7px 0;padding:14px 15px;border-radius:12px;border:1px solid #2a333d;background:#0d1116;color:#fff;outline:none}.form textarea{min-height:110px;resize:vertical}.full{width:100%;margin-top:8px}.success{display:none;margin-top:12px;color:var(--good);font-weight:700}
     footer{padding:32px 0 90px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
-    .chatbtn{position:fixed;right:22px;bottom:22px;width:60px;height:60px;border:0;border-radius:18px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#111;font-size:25px;cursor:pointer;box-shadow:0 18px 45px rgba(245,184,0,.26);z-index:100;display:grid;place-items:center}.chatbox{position:fixed;right:22px;bottom:94px;width:min(390px,calc(100vw - 24px));height:560px;background:#0e1217;border:1px solid #2a333d;border-radius:22px;display:none;flex-direction:column;overflow:hidden;z-index:100;box-shadow:0 25px 70px rgba(0,0,0,.55)}.chatbox:target{display:flex}.chathead{padding:15px 16px;border-bottom:1px solid #222b34;display:flex;justify-content:space-between;align-items:center}.chathead small{display:block;color:var(--muted);margin-top:2px}.close{background:none;border:0;color:#fff;font-size:22px;cursor:pointer}.msgs{flex:1;overflow:auto;padding:14px}.inputrow{display:flex;gap:8px;padding:12px;border-top:1px solid #222b34}.inputrow input{flex:1;padding:12px;border-radius:12px;border:1px solid #29333d;background:#0a0e12;color:white}.send{border:0;border-radius:12px;background:var(--accent);font-weight:900;padding:0 16px;cursor:pointer}.mini{font-size:12px;color:#7f8b97;padding:0 14px 10px}.quick{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.chip{border:1px solid #313b46;background:#141a21;color:#d7dfe7;padding:8px 10px;border-radius:999px;font-size:12px;cursor:pointer}.uploadWrap{margin:10px 0;padding:12px;border:1px dashed #3a4653;border-radius:14px;background:#111820}.uploadWrap label{display:block;font-size:13px;font-weight:800;margin-bottom:8px}.uploadWrap input{width:100%;font-size:12px;color:#cfd8e3}.thumbs{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.thumbs img{width:58px;height:58px;object-fit:cover;border-radius:10px;border:1px solid #34414e}.genbtn{width:100%;margin-top:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#111;border:0;border-radius:12px;padding:12px;font-weight:900;cursor:pointer}.previewOverlay{position:fixed;inset:0;background:rgba(4,6,9,.88);backdrop-filter:blur(9px);z-index:500;display:none;overflow:auto;padding:22px}.previewOverlay.show{display:block}.previewShell{max-width:1080px;margin:0 auto;background:#f5f6f8;color:#12161c;border-radius:24px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.55)}.previewTop{position:sticky;top:0;z-index:4;background:#0e1217;color:white;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px}.previewTop small{display:block;color:#9aa6b2}.previewActions{display:flex;gap:8px;flex-wrap:wrap}.previewActions button{border:0;border-radius:10px;padding:9px 12px;font-weight:800;cursor:pointer}.demoSiteHero{min-height:430px;padding:72px 7%;display:flex;align-items:end;background:linear-gradient(120deg,#111820,#273442);color:white;position:relative;overflow:hidden}.demoSiteHero.hasPhoto:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,9,13,.82),rgba(6,9,13,.36));z-index:1}.demoHeroPhoto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.demoHeroContent{position:relative;z-index:2;max-width:740px}.demoHeroContent h2{font-size:clamp(38px,6vw,70px);line-height:1;margin:10px 0 14px;letter-spacing:-2px}.demoHeroContent p{font-size:18px;line-height:1.6;color:#e1e6eb}.demoPill{display:inline-block;background:#f5b800;color:#111;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:900}.demoCTA{display:inline-block;margin-top:14px;padding:13px 17px;background:#f5b800;color:#111;border-radius:11px;font-weight:900}.demoSection{padding:54px 7%;background:white}.demoSection.alt{background:#eef1f4}.demoSection h3{font-size:32px;margin:0 0 22px}.demoServices{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.demoService{padding:20px;border-radius:16px;background:#fff;border:1px solid #dfe4ea;box-shadow:0 7px 24px rgba(14,18,23,.06)}.demoGallery{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.demoGallery img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px}.demoContact{padding:48px 7%;background:#10151b;color:white}.demoContactGrid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.demoFakeForm{padding:18px;background:#171d24;border-radius:16px;border:1px solid #2b3540}.demoFakeForm div{height:46px;background:#0e1217;border:1px solid #2e3945;border-radius:10px;margin:9px 0}.previewNote{padding:15px 7%;background:#fff7d6;color:#554300;font-weight:700;border-top:1px solid #eedb85}.disabledInput{opacity:.55;pointer-events:none}
+    .chatbtn{position:fixed;right:22px;bottom:22px;width:60px;height:60px;border:0;border-radius:18px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#111;font-size:25px;cursor:pointer;box-shadow:0 18px 45px rgba(245,184,0,.26);z-index:100;display:grid;place-items:center}.chatbox{position:fixed;right:22px;bottom:94px;width:min(390px,calc(100vw - 24px));height:560px;background:#0e1217;border:1px solid #2a333d;border-radius:22px;display:none;flex-direction:column;overflow:hidden;z-index:100;box-shadow:0 25px 70px rgba(0,0,0,.55)}.chatbox:target{display:flex}.chathead{padding:15px 16px;border-bottom:1px solid #222b34;display:flex;justify-content:space-between;align-items:center}.chathead small{display:block;color:var(--muted);margin-top:2px}.close{background:none;border:0;color:#fff;font-size:22px;cursor:pointer}.msgs{flex:1;overflow:auto;padding:14px}.inputrow{display:flex;gap:8px;padding:12px;border-top:1px solid #222b34}.inputrow input{flex:1;padding:12px;border-radius:12px;border:1px solid #29333d;background:#0a0e12;color:white}.send{border:0;border-radius:12px;background:var(--accent);font-weight:900;padding:0 16px;cursor:pointer}.mini{font-size:12px;color:#7f8b97;padding:0 14px 10px}.quick{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.chip{border:1px solid #313b46;background:#141a21;color:#d7dfe7;padding:8px 10px;border-radius:999px;font-size:12px;cursor:pointer}.uploadWrap{margin:10px 0;padding:12px;border:1px dashed #3a4653;border-radius:14px;background:#111820}.uploadWrap label{display:block;font-size:13px;font-weight:800;margin-bottom:8px}.uploadWrap input{width:100%;font-size:12px;color:#cfd8e3}.thumbs{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.thumbs img{width:58px;height:58px;object-fit:cover;border-radius:10px;border:1px solid #34414e}.genbtn{width:100%;margin-top:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#111;border:0;border-radius:12px;padding:12px;font-weight:900;cursor:pointer}.genbtn:disabled{opacity:.55;cursor:wait}.uploadStatus{font-size:12px;color:#9eabb8;margin:8px 0 2px;min-height:18px}.logoActions{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.logoAction{border:1px solid #35414d;background:#151c24;color:#eef3f8;padding:9px 11px;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer}.logoAction.primary{background:#f5b800;color:#111;border-color:#f5b800}.logoIdeas{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.logoIdea{border:1px solid #33404c;background:#0c1116;border-radius:13px;padding:8px;cursor:pointer;display:grid;place-items:center;min-height:74px}.logoIdea.active{border-color:#f5b800;box-shadow:0 0 0 2px rgba(245,184,0,.18)}.logoIdea img{width:56px;height:56px;object-fit:contain;border-radius:12px;background:#fff}.logoCurrent{display:flex;align-items:center;gap:10px;margin-top:10px;padding:9px;border:1px solid #303b46;border-radius:12px}.logoCurrent img{width:54px;height:54px;object-fit:contain;border-radius:12px;background:#fff}.logoCurrent small{color:#8f9ba8;line-height:1.4}.mobileNote{font-size:11px;color:#7f8b97;line-height:1.45}.previewOverlay{position:fixed;inset:0;background:rgba(4,6,9,.88);backdrop-filter:blur(9px);z-index:500;display:none;overflow:auto;padding:22px}.previewOverlay.show{display:block}.previewShell{max-width:1080px;margin:0 auto;background:#f5f6f8;color:#12161c;border-radius:24px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.55)}.previewTop{position:sticky;top:0;z-index:4;background:#0e1217;color:white;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px}.previewTop small{display:block;color:#9aa6b2}.previewActions{display:flex;gap:8px;flex-wrap:wrap}.previewActions button{border:0;border-radius:10px;padding:9px 12px;font-weight:800;cursor:pointer}.demoSiteHero{min-height:430px;padding:72px 7%;display:flex;align-items:end;background:linear-gradient(120deg,#111820,#273442);color:white;position:relative;overflow:hidden}.demoSiteHero.hasPhoto:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,9,13,.82),rgba(6,9,13,.36));z-index:1}.demoHeroPhoto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.demoHeroContent{position:relative;z-index:2;max-width:740px}.demoHeroContent h2{font-size:clamp(38px,6vw,70px);line-height:1;margin:10px 0 14px;letter-spacing:-2px}.demoHeroContent p{font-size:18px;line-height:1.6;color:#e1e6eb}.demoPill{display:inline-block;background:#f5b800;color:#111;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:900}.demoCTA{display:inline-block;margin-top:14px;padding:13px 17px;background:#f5b800;color:#111;border-radius:11px;font-weight:900}.demoSection{padding:54px 7%;background:white}.demoSection.alt{background:#eef1f4}.demoSection h3{font-size:32px;margin:0 0 22px}.demoServices{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.demoService{padding:20px;border-radius:16px;background:#fff;border:1px solid #dfe4ea;box-shadow:0 7px 24px rgba(14,18,23,.06)}.demoGallery{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.demoGallery img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px}.demoContact{padding:48px 7%;background:#10151b;color:white}.demoContactGrid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.demoFakeForm{padding:18px;background:#171d24;border-radius:16px;border:1px solid #2b3540}.demoFakeForm div{height:46px;background:#0e1217;border:1px solid #2e3945;border-radius:10px;margin:9px 0}.previewNote{padding:15px 7%;background:#fff7d6;color:#554300;font-weight:700;border-top:1px solid #eedb85}.disabledInput{opacity:.55;pointer-events:none}
     @media(max-width:900px){.hero,.contact{grid-template-columns:1fr}.grid3,.pricing{grid-template-columns:1fr}.steps{grid-template-columns:1fr 1fr}.links{display:none}.hero{padding-top:58px}h1{letter-spacing:-2px}.demo{max-width:620px}.section-title{font-size:34px}}
     @media(max-width:560px){.steps{grid-template-columns:1fr}.chatbox{right:12px;bottom:84px;height:70vh}.chatbtn{right:12px;bottom:12px}.wrap{padding:0 16px}.lead{font-size:17px}.demoServices,.demoGallery,.demoContactGrid{grid-template-columns:1fr}.previewOverlay{padding:8px}.previewTop{align-items:flex-start}}
   
@@ -157,6 +157,7 @@
           <label>Telefon<input id="editPhone"></label>
           <label>E-mail<input id="editEmail"></label>
           <label>Styl<select id="editStyle"><option>Ciemna i premium</option><option>Jasna i nowoczesna</option><option>Mocna i sportowa</option><option>Elegancka i spokojna</option></select></label>
+          <div class="editorUpload"><b style="font-size:12px">Logo</b><div class="logoActions"><button class="logoAction" type="button" id="editUploadLogoBtn">Wgraj własne</button><button class="logoAction primary" type="button" id="regenLogoBtn">✨ Wygeneruj nowe</button></div><input id="editLogoFile" type="file" accept="image/*" style="display:none"><div id="editorLogoIdeas" class="logoIdeas"></div><div class="mobileNote">W tej wersji demo BeeFlow tworzy warianty lokalnie. Po podpięciu właściwego AI przycisk będzie generował unikalne logo na podstawie opisu firmy.</div></div>
           <label class="editorUpload">Dodaj / podmień zdjęcia<input id="editPhotos" type="file" accept="image/*" multiple></label>
           <div class="editorHint">To demo zapisuje zmiany tylko lokalnie. W produkcji klient miałby własny panel BeeFlow.</div>
         </div>
@@ -223,7 +224,7 @@
       {key:'email',q:'Podaj e-mail firmowy. Jeśli nie chcesz go pokazywać, wpisz „pomiń”.'}
     ];
 
-    const chat={started:false,step:0,data:{company:'',industry:'',city:'',services:'',style:'',usp:'',headline:'',phone:'',email:'',logo:'',photos:[]}};
+    const chat={started:false,step:0,data:{company:'',industry:'',city:'',services:'',style:'',usp:'',headline:'',phone:'',email:'',logo:'',logoMode:'none',logoSeed:0,photos:[]}};
 
     function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
     function bubble(text,who='ai',html=false){const d=document.createElement('div');d.className='bubble '+who;if(html)d.innerHTML=text;else d.textContent=text;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight}
@@ -237,17 +238,119 @@
     function submitMessage(text){const t=(text??inp.value).trim();if(!t)return;bubble(t,'user');inp.value='';const current=questions[chat.step];if(!current)return;if(current.key==='company'&&/^(nie mam|brak|nie mam nazwy)$/i.test(t))chat.data.company='';else if(current.key==='usp'&&/^pomiń$/i.test(t))chat.data.usp='';else chat.data[current.key]=t;chat.step++;if(current.key==='industry'&&!chat.data.company){chat.data.company=proposeName(t);ai(`Nie ma problemu — jako nazwę roboczą proponuję „${chat.data.company}”. W każdej chwili można ją zmienić.`)}askCurrent()}
     form.addEventListener('submit',e=>{e.preventDefault();submitMessage();requestAnimationFrame(()=>{inp.focus({preventScroll:true});msgs.scrollTop=msgs.scrollHeight})});
 
-    function showUploadStep(){updateProgress();inp.disabled=true;form.classList.add('disabledInput');const wrap=document.createElement('div');wrap.className='uploadWrap';wrap.innerHTML=`
-      <div class="uploadBlock"><label>🖼️ Logo firmy (opcjonalnie)</label><input id="logoInput" type="file" accept="image/*"><div class="thumbs" id="logoThumb"></div><div class="fileHelp">PNG/JPG. Jeśli nie masz logo, BeeFlow użyje eleganckiego znaku z inicjałami.</div></div>
-      <div class="uploadBlock"><label>📷 Zdjęcia realizacji / firmy (opcjonalnie)</label><input id="photoInput" type="file" accept="image/*" multiple><div class="thumbs" id="thumbs"></div><div class="fileHelp">Możesz dodać kilka zdjęć — pierwsze wykorzystamy w sekcji głównej, pozostałe w galerii.</div></div>
-      <button class="genbtn" type="button" id="generateBtn">✨ Wygeneruj profesjonalne demo</button>`;
+    function showUploadStep(){
+      updateProgress();inp.disabled=true;form.classList.add('disabledInput');
+      const wrap=document.createElement('div');wrap.className='uploadWrap';wrap.innerHTML=`
+        <div class="uploadBlock">
+          <label>🖼️ Logo firmy</label>
+          <div class="logoActions">
+            <button class="logoAction" type="button" id="haveLogoBtn">Mam logo — wgram plik</button>
+            <button class="logoAction primary" type="button" id="needLogoBtn">✨ Nie mam logo — stwórz propozycje</button>
+          </div>
+          <input id="logoInput" type="file" accept="image/*" style="display:none">
+          <div class="thumbs" id="logoThumb"></div>
+          <div class="logoIdeas" id="logoIdeas"></div>
+          <div class="fileHelp">Możesz wgrać własne logo albo wybrać jedną z propozycji BeeFlow. Logo da się później zmienić w panelu demo.</div>
+        </div>
+        <div class="uploadBlock"><label>📷 Zdjęcia realizacji / firmy (opcjonalnie)</label><input id="photoInput" type="file" accept="image/*" multiple><div class="uploadStatus" id="photoStatus"></div><div class="thumbs" id="thumbs"></div><div class="fileHelp">Możesz dodać kilka zdjęć. BeeFlow zmniejsza je przed podglądem, dzięki czemu kreator działa płynniej także na iPhone.</div></div>
+        <button class="genbtn" type="button" id="generateBtn">✨ Wygeneruj profesjonalne demo</button>`;
       msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;
-      wrap.querySelector('#logoInput').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;chat.data.logo=await fileToDataURL(file);wrap.querySelector('#logoThumb').innerHTML=`<img src="${chat.data.logo}" alt="Logo">`});
-      wrap.querySelector('#photoInput').addEventListener('change',async e=>{chat.data.photos=[];const thumbs=wrap.querySelector('#thumbs');thumbs.innerHTML='';for(const file of [...e.target.files].slice(0,8)){const src=await fileToDataURL(file);chat.data.photos.push(src);const img=document.createElement('img');img.src=src;thumbs.appendChild(img)}});
-      wrap.querySelector('#generateBtn').onclick=generateDemo;
-      ai('Gotowe. Jeśli masz zdjęcia lub logo, dodaj je teraz. Jeśli nie — BeeFlow przygotuje stronę bez nich.');
+
+      const genBtn=wrap.querySelector('#generateBtn');
+      const logoInput=wrap.querySelector('#logoInput');
+      const photoInput=wrap.querySelector('#photoInput');
+      const status=wrap.querySelector('#photoStatus');
+      const ideas=wrap.querySelector('#logoIdeas');
+      const logoThumb=wrap.querySelector('#logoThumb');
+
+      wrap.querySelector('#haveLogoBtn').onclick=()=>logoInput.click();
+      wrap.querySelector('#needLogoBtn').onclick=()=>{
+        chat.data.logoMode='generated';
+        renderLogoIdeas(ideas,true);
+        ai('Przygotowałem kilka propozycji logo. Wybierz tę, która najbardziej Ci pasuje — później możesz generować kolejne w podglądzie strony.');
+      };
+      logoInput.addEventListener('change',async e=>{
+        const file=e.target.files&&e.target.files[0];if(!file)return;
+        try{
+          genBtn.disabled=true;genBtn.textContent='Przetwarzam logo…';
+          chat.data.logo=await imageFileToDataURL(file,900,.9);
+          chat.data.logoMode='uploaded';
+          logoThumb.innerHTML=`<img src="${chat.data.logo}" alt="Logo">`;
+          ideas.innerHTML='';
+        }catch(err){ai('Nie udało się odczytać logo. Spróbuj wybrać inny plik JPG lub PNG.')}finally{genBtn.disabled=false;genBtn.textContent='✨ Wygeneruj profesjonalne demo'}
+      });
+      photoInput.addEventListener('change',async e=>{
+        const files=[...(e.target.files||[])].slice(0,8);
+        const thumbs=wrap.querySelector('#thumbs');thumbs.innerHTML='';
+        if(!files.length){chat.data.photos=[];status.textContent='';return}
+        genBtn.disabled=true;genBtn.textContent='Przetwarzam zdjęcia…';status.textContent=`Przetwarzam 0 z ${files.length} zdjęć…`;
+        const result=[];
+        try{
+          for(let i=0;i<files.length;i++){
+            status.textContent=`Przetwarzam ${i+1} z ${files.length} zdjęć…`;
+            const src=await imageFileToDataURL(files[i],1600,.82);
+            result.push(src);
+            const img=document.createElement('img');img.src=src;thumbs.appendChild(img);
+            await new Promise(r=>setTimeout(r,0));
+          }
+          chat.data.photos=result;
+          status.textContent=`✓ Gotowe — dodano ${result.length} ${result.length===1?'zdjęcie':'zdjęć'}. Możesz wygenerować stronę.`;
+        }catch(err){
+          status.textContent='Nie udało się przetworzyć któregoś zdjęcia. Spróbuj dodać mniej zdjęć albo inne pliki.';
+        }finally{
+          genBtn.disabled=false;genBtn.textContent='✨ Wygeneruj profesjonalne demo';
+        }
+      });
+      genBtn.onclick=()=>{
+        if(genBtn.disabled)return;
+        generateDemo();
+      };
+      ai('Gotowe. Dodaj zdjęcia, jeśli je masz. Z logo możesz zrobić dwie rzeczy: wgrać własne albo poprosić BeeFlow o propozycje.');
     }
-    function fileToDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
+
+    function fileToDataURL(file){return imageFileToDataURL(file,1600,.84)}
+    function imageFileToDataURL(file,maxSide=1600,quality=.84){
+      return new Promise((resolve,reject)=>{
+        if(!file||!file.type||!file.type.startsWith('image/')){reject(new Error('not-image'));return}
+        const reader=new FileReader();
+        reader.onerror=()=>reject(reader.error||new Error('read-error'));
+        reader.onload=()=>{
+          const img=new Image();
+          img.onerror=()=>resolve(reader.result);
+          img.onload=()=>{
+            try{
+              const scale=Math.min(1,maxSide/Math.max(img.naturalWidth||1,img.naturalHeight||1));
+              const w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));
+              const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+              const ctx=canvas.getContext('2d',{alpha:false});
+              ctx.drawImage(img,0,0,w,h);
+              resolve(canvas.toDataURL('image/jpeg',quality));
+            }catch(e){resolve(reader.result)}
+          };
+          img.src=reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function logoSvgData(company,industry,variant=0,seed=0){
+      const name=(company||'Twoja Firma').trim();
+      const letters=initials(name)||'BF';
+      const palette=[['#f5b800','#111820'],['#111820','#f5b800'],['#194b6a','#d9f3ff'],['#2b174d','#f3deff'],['#123f35','#d9fff4']];
+      const [a,b]=palette[(variant+seed)%palette.length];
+      const safe=(s)=>String(s).replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&apos;'}[m]));
+      const label=safe(name.split(/\s+/).slice(0,2).join(' '));
+      let art='';
+      if(variant%4===0)art=`<rect x="14" y="14" width="132" height="132" rx="34" fill="${a}"/><text x="80" y="98" text-anchor="middle" font-family="Arial,sans-serif" font-size="48" font-weight="900" fill="${b}">${safe(letters)}</text>`;
+      if(variant%4===1)art=`<circle cx="80" cy="80" r="66" fill="${b}"/><path d="M42 91 L80 39 L118 91 L96 91 L80 70 L64 91 Z" fill="${a}"/><text x="80" y="128" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="900" fill="${a}">${safe(letters)}</text>`;
+      if(variant%4===2)art=`<rect x="14" y="14" width="132" height="132" rx="24" fill="${b}"/><path d="M42 52h76v18H42zM42 79h58v18H42zM42 106h76v18H42z" fill="${a}"/>`;
+      if(variant%4===3)art=`<rect x="14" y="14" width="132" height="132" rx="66" fill="${a}"/><text x="80" y="92" text-anchor="middle" font-family="Georgia,serif" font-size="54" font-weight="700" fill="${b}">${safe(letters.charAt(0))}</text>`;
+      const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" rx="36" fill="#ffffff"/>${art}</svg>`;
+      return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg);
+    }
+    function createLogoOptions(){const seed=chat.data.logoSeed||0;return [0,1,2,3].map(v=>logoSvgData(chat.data.company,chat.data.industry,v,seed))}
+    function selectLogo(src,container){chat.data.logo=src;chat.data.logoMode='generated';if(container)container.querySelectorAll('.logoIdea').forEach(el=>el.classList.toggle('active',el.dataset.src===src));if(overlay.classList.contains('show'))renderDemo(false)}
+    function renderLogoIdeas(container,newBatch=false){if(!container)return;if(newBatch)chat.data.logoSeed=(chat.data.logoSeed||0)+1;const options=createLogoOptions();container.innerHTML='';options.forEach((src,i)=>{const b=document.createElement('button');b.type='button';b.className='logoIdea'+(chat.data.logo===src?' active':'');b.dataset.src=src;b.innerHTML=`<img src="${src}" alt="Propozycja logo ${i+1}">`;b.onclick=()=>selectLogo(src,container);container.appendChild(b)});if(!chat.data.logo){selectLogo(options[0],container)}}
 
     function themeClass(style=''){const s=style.toLowerCase();if(s.includes('jasna'))return 'theme-light';if(s.includes('sport'))return 'theme-sport';if(s.includes('elegancka'))return 'theme-elegant';return 'theme-dark'}
     function hashString(str=''){let h=0;for(let i=0;i<str.length;i++)h=((h<<5)-h)+str.charCodeAt(i)|0;return Math.abs(h)}
@@ -280,7 +383,7 @@
         <div class="demoCtaBand"><div><h3>Masz pomysł na realizację?</h3><p>Opisz krótko, czego potrzebujesz. Odezwiemy się z kolejnym krokiem i informacją, jak możemy pomóc.</p></div><span class="demoCTA">Skontaktuj się</span></div>
         <section class="demoContact" id="demo-kontakt"><div class="demoContactGrid"><div><span class="demoPill">Kontakt</span><h3>Porozmawiajmy o Twoim zleceniu</h3><p>Wypełnij formularz albo skontaktuj się bezpośrednio. Im więcej konkretów podasz, tym szybciej możemy przygotować odpowiedź.</p><div class="demoContactList"><div class="demoContactItem"><b>Telefon</b><br>${esc(d.phone||'do uzupełnienia')}</div>${email?`<div class="demoContactItem"><b>E-mail</b><br>${esc(email)}</div>`:''}<div class="demoContactItem"><b>Obszar działania</b><br>${esc(d.city||'do uzupełnienia')} i okolice</div></div></div><form class="demoRealForm" data-demo-form><h4>Poproś o bezpłatną wycenę</h4><p class="formIntro">Zostaw kontakt i krótko opisz, czego potrzebujesz.</p><div class="demoField"><label>Imię i nazwisko</label><input name="name" required placeholder="Np. Jan Kowalski"></div><div class="demoField"><label>Telefon</label><input name="phone" required placeholder="Np. 500 000 000"></div><div class="demoField"><label>E-mail <span style="font-weight:500;color:#8693a0">(opcjonalnie)</span></label><input name="email" type="email" placeholder="Np. kontakt@firma.pl"></div><div class="demoField"><label>W czym możemy pomóc?</label><select name="service"><option value="">Wybierz usługę</option>${services.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div><div class="demoField"><label>Krótki opis zlecenia</label><textarea name="message" placeholder="Napisz np. wymiary, termin lub czego dokładnie potrzebujesz"></textarea></div><button class="demoCTA demoFormSubmit" type="submit">Wyślij zapytanie</button><div class="demoFormSuccess">✓ Demo: zgłoszenie zapisane jako lead w tej przeglądarce.</div></form></div></section>
         <div class="domainIdeas"><b>Propozycje domen dla tej firmy</b><div class="domainChips">${domains.map(x=>`<span class="domainChip">${esc(x)}</span>`).join('')}</div></div>
-        <div class="previewNote">🔒 To jest wersja demonstracyjna. Publikacja, domena, baza leadów, pełny chatbot AI i integracje są aktywowane po wybraniu pakietu.</div>
+        <div class="previewNote">🔒 To jest wersja demonstracyjna. Publikacja, domena, baza leadów, pełny chatbot AI, generowanie treści/logo przez model AI i integracje są aktywowane po wybraniu pakietu.</div>
         <button class="clientChatBtn" type="button" data-client-chat-toggle aria-label="Otwórz asystenta">💬</button>
         <div class="clientChatPanel" data-client-chat-panel><div class="clientChatHead"><div><b>Asystent ${esc(d.company||'firmy')}</b><small style="display:block;color:#8e9aa6;margin-top:2px">Odpowiadam 24/7</small></div><button type="button" data-client-chat-close>×</button></div><div class="clientChatMsgs" data-client-chat-msgs><div class="clientBubble ai">Cześć 👋 W czym mogę Ci pomóc? Możesz zapytać o ofertę albo wybrać usługę poniżej.</div><div class="clientQuick">${services.slice(0,3).map(x=>`<button type="button" data-client-quick="${esc(x)}">${esc(x)}</button>`).join('')}</div></div><form class="clientChatInput" data-client-chat-form><input placeholder="Napisz wiadomość..."><button type="submit">➤</button></form></div>
       </div>`;
@@ -302,9 +405,35 @@
       const df=generatedSite.querySelector('[data-demo-form]');if(df)df.onsubmit=e=>{e.preventDefault();saveClientLead(new FormData(df));const ok=df.querySelector('.demoFormSuccess');if(ok)ok.style.display='block';df.reset()};
     }
 
-    function syncLiveEditor(){const vals={editCompany:'company',editIndustry:'industry',editCity:'city',editServices:'services',editUsp:'usp',editHeadline:'headline',editPhone:'phone',editEmail:'email',editStyle:'style'};for(const [id,key] of Object.entries(vals)){const el=document.getElementById(id);if(el)el.value=chat.data[key]||''}}
+    function syncLiveEditor(){const vals={editCompany:'company',editIndustry:'industry',editCity:'city',editServices:'services',editUsp:'usp',editHeadline:'headline',editPhone:'phone',editEmail:'email',editStyle:'style'};for(const [id,key] of Object.entries(vals)){const el=document.getElementById(id);if(el)el.value=chat.data[key]||''}const ideas=document.getElementById('editorLogoIdeas');if(ideas){if(chat.data.logoMode==='generated')renderLogoIdeas(ideas,false);else ideas.innerHTML=''}}
     function toggleLiveEditor(force){const ed=document.getElementById('liveEditor');const open=force===undefined?!ed.classList.contains('open'):force;ed.classList.toggle('open',open);ed.setAttribute('aria-hidden',String(!open));if(open)syncLiveEditor()}
-    function bindLiveEditor(){const vals={editCompany:'company',editIndustry:'industry',editCity:'city',editServices:'services',editUsp:'usp',editHeadline:'headline',editPhone:'phone',editEmail:'email',editStyle:'style'};for(const [id,key] of Object.entries(vals)){const el=document.getElementById(id);el.addEventListener('input',()=>{chat.data[key]=el.value;renderDemo(false)});el.addEventListener('change',()=>{chat.data[key]=el.value;renderDemo(false)})}document.getElementById('editPhotos').addEventListener('change',async e=>{const files=[...e.target.files].slice(0,8);if(!files.length)return;chat.data.photos=[];for(const file of files)chat.data.photos.push(await fileToDataURL(file));renderDemo(false)})}
+    function bindLiveEditor(){
+      const vals={editCompany:'company',editIndustry:'industry',editCity:'city',editServices:'services',editUsp:'usp',editHeadline:'headline',editPhone:'phone',editEmail:'email',editStyle:'style'};
+      for(const [id,key] of Object.entries(vals)){
+        const el=document.getElementById(id);
+        el.addEventListener('input',()=>{chat.data[key]=el.value;renderDemo(false);if(key==='company'||key==='industry')renderLogoIdeas(document.getElementById('editorLogoIdeas'),false)});
+        el.addEventListener('change',()=>{chat.data[key]=el.value;renderDemo(false)});
+      }
+      const editPhotos=document.getElementById('editPhotos');
+      editPhotos.addEventListener('change',async e=>{
+        const files=[...(e.target.files||[])].slice(0,8);if(!files.length)return;
+        const next=[];
+        for(const file of files)next.push(await imageFileToDataURL(file,1600,.82));
+        chat.data.photos=next;renderDemo(false);
+      });
+      const editLogoFile=document.getElementById('editLogoFile');
+      document.getElementById('editUploadLogoBtn').onclick=()=>editLogoFile.click();
+      editLogoFile.addEventListener('change',async e=>{
+        const file=e.target.files&&e.target.files[0];if(!file)return;
+        chat.data.logo=await imageFileToDataURL(file,900,.9);chat.data.logoMode='uploaded';
+        document.getElementById('editorLogoIdeas').innerHTML='';renderDemo(false);
+      });
+      document.getElementById('regenLogoBtn').onclick=()=>{
+        chat.data.logo='';chat.data.logoMode='generated';
+        renderLogoIdeas(document.getElementById('editorLogoIdeas'),true);
+        renderDemo(false);
+      };
+    }
 
     function saveLead(source){try{const leads=JSON.parse(localStorage.getItem('beeflow_leads')||'[]');leads.push({...chat.data,logo:!!chat.data.logo,photos:chat.data.photos.length,source,createdAt:new Date().toISOString()});localStorage.setItem('beeflow_leads',JSON.stringify(leads))}catch(e){}}
     document.getElementById('liveEditBtn').onclick=()=>toggleLiveEditor();
