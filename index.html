@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BeeFlow AI v7 — Twój cyfrowy handlowiec 24/7</title>
+  <title>BeeFlow AI v8 — Twój cyfrowy handlowiec 24/7</title>
   <meta name="description" content="BeeFlow AI pomaga małym firmom zdobywać klientów 24/7 dzięki nowoczesnym stronom, czatowi AI i automatyzacji leadów." />
   <style>
     :root{
@@ -157,7 +157,7 @@
         <div class="liveEditorHead"><div><b>Edytuj stronę na żywo</b><small>Zmiany pojawiają się od razu w demo</small></div><button id="closeLiveEditor">×</button></div>
         <div class="liveEditorBody">
           <label>Nazwa firmy<input id="editCompany"></label>
-          <label>Branża<input id="editIndustry"></label>
+          <label>Branża / kategoria strony<input id="editIndustry"></label>
           <label>Miasto / obszar<input id="editCity"></label>
           <label>Usługi<textarea id="editServices" rows="4" placeholder="Oddziel przecinkami"></textarea></label>
           <label>Najmocniejszy argument<textarea id="editUsp" rows="3"></textarea></label>
@@ -225,7 +225,7 @@
 
     const questions=[
       {key:'company',q:'Jak nazywa się Twoja firma? Jeśli nie masz jeszcze nazwy, napisz „nie mam nazwy”.'},
-      {key:'industry',q:'Czym dokładnie zajmuje się Twoja firma? Napisz własnymi słowami — im więcej konkretów, tym lepiej dopasuję stronę.'},
+      {key:'businessBrief',q:'Opisz mi krótko, czym zajmuje się firma i jak wygląda Wasza praca. To jest materiał roboczy dla BeeFlow — nie wkleję go 1:1 na stronę, tylko na jego podstawie przygotuję krótsze, profesjonalne treści.'},
       {key:'city',q:'Na jakim obszarze działasz? Podaj miasto, powiat albo region.'},
       {key:'services',q:'Jakie są najważniejsze usługi? Wypisz 3–6 pozycji, rozdzielając je przecinkami.'},
       {key:'style',q:'Jaki klimat strony najbardziej pasuje do Twojej firmy?',chips:['Ciemna i premium','Jasna i nowoczesna','Mocna i sportowa','Elegancka i spokojna']},
@@ -234,7 +234,7 @@
       {key:'email',q:'Jaki e-mail ma być na stronie? Jeśli nie chcesz go pokazywać, wpisz „pomiń”.'}
     ];
 
-    const chat={started:false,step:0,phase:'ask',pendingKey:null,pendingValue:'',needsName:false,nameRound:0,lastSuggestedName:'',extraRound:0,data:{company:'',industry:'',city:'',services:'',style:'',usp:'',headline:'',phone:'',email:'',logo:'',logoMode:'none',logoSeed:0,photos:[],projectPhotos:[],extras:[],extraNotes:'',projectsEnabled:false}};
+    const chat={started:false,step:0,phase:'ask',pendingKey:null,pendingValue:'',needsName:false,nameRound:0,lastSuggestedName:'',extraRound:0,data:{company:'',businessBrief:'',industry:'',city:'',services:'',style:'',usp:'',headline:'',phone:'',email:'',logo:'',logoMode:'none',logoSeed:0,photos:[],projectPhotos:[],extras:[],extraNotes:'',projectsEnabled:false}};
 
     function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
     function bubble(text,who='ai',html=false){const d=document.createElement('div');d.className='bubble '+who;if(html)d.innerHTML=text;else d.textContent=text;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight}
@@ -355,21 +355,175 @@
     function aboutCopy(d){const usp=cleanUsp(d.usp);const ind=industryLabel(d.industry).toLowerCase();return `${d.company||'Nasza firma'} specjalizuje się w ${ind}. ${usp?usp+'. ':''}Najważniejsze są dla nas jasne ustalenia, dobry kontakt i wykonanie zgodne z tym, na co umówiliśmy się z klientem.`}
     function trustItems(d){const ind=(d.industry||'').toLowerCase();if(/bram|ogrodz|spaw/.test(ind))return [['Wykonanie pod wymiar','Rozwiązanie dopasowane do konkretnej posesji'],['Jasny zakres prac','Wiesz, co obejmuje realizacja'],['Kontakt lokalny',`${d.city||'Twoja okolica'} i okolice`]];if(/detail|auto/.test(ind))return [['Dobór usługi','Zakres dopasowany do stanu auta'],['Dokładne wykonanie','Nacisk na detal i efekt końcowy'],['Wygodny kontakt','Szybkie ustalenie terminu']];return [['Szybka odpowiedź','Bez zbędnego czekania'],['Jasna wycena','Czytelny zakres i kolejny krok'],['Lokalna obsługa',`${d.city||'Twoja okolica'} i okolice`]]}
     function whyCards(d){const usp=cleanUsp(d.usp);return [['Indywidualne podejście','Zakres dopasowany do konkretnego zlecenia.'],['Dobry kontakt','Klient wie, co dzieje się na każdym etapie.'],['Przejrzyste zasady','Najważniejsze ustalenia są jasne przed startem.'],[usp||'Dbałość o wykonanie',usp?'To właśnie ten element wyróżnia firmę na tle konkurencji.':'Efekt ma dobrze wyglądać i dobrze działać.']]}
+    function siteCopy(d){
+      const cat=categoryKey(d);
+      const map={
+        gates:{servicesTitle:'Co możemy wykonać dla Twojej posesji',servicesLead:'Każda realizacja zaczyna się od wymiarów i ustalenia sposobu użytkowania. Poniżej klient od razu widzi, jaki zakres możemy przygotować.',ctaTitle:'Masz pomysł na bramę lub ogrodzenie?',ctaLead:'Podeślij wymiary albo opisz, co chcesz wykonać. Ustalimy, jaki będzie najlepszy kolejny krok.',contactTitle:'Omówmy Twoją realizację',contactLead:'Napisz, czego potrzebujesz i gdzie ma powstać realizacja. Na tej podstawie możemy wrócić z konkretnymi pytaniami do wyceny.'},
+        auto:{servicesTitle:'Zakres, który dobieramy do auta',servicesLead:'Nie każde auto potrzebuje tego samego. Pokazujemy klientowi konkretne usługi i wyjaśniamy, jaki efekt daje każda z nich.',ctaTitle:'Chcesz poprawić wygląd swojego auta?',ctaLead:'Napisz model auta i czego oczekujesz. Dobierzemy zakres zamiast sprzedawać przypadkowy pakiet.',contactTitle:'Umówmy zakres i termin',contactLead:'Podaj auto, interesującą Cię usługę i kontakt. Wrócimy z propozycją dalszego działania.'},
+        build:{servicesTitle:'Zakres prac bez niedomówień',servicesLead:'Klient od początku widzi, jakie prace wykonujemy i czego może oczekiwać na kolejnych etapach.',ctaTitle:'Masz zakres do wyceny?',ctaLead:'Opisz miejsce i planowane prace. Im więcej konkretów, tym lepiej przygotujemy kolejny krok.',contactTitle:'Porozmawiajmy o zakresie prac',contactLead:'Zostaw kontakt i krótki opis. Ustalimy, czego potrzeba do przygotowania sensownej wyceny.'},
+        transport:{servicesTitle:'Transport dopasowany do zlecenia',servicesLead:'Inaczej planuje się mały przewóz, inaczej większy ładunek. Pokazujemy klientowi jasny zakres usług i sposób kontaktu.',ctaTitle:'Masz coś do przewiezienia?',ctaLead:'Podaj trasę, gabaryt i termin. Na tej podstawie łatwiej ustalić dostępność oraz koszt.',contactTitle:'Sprawdźmy trasę i termin',contactLead:'Zostaw miejsce odbioru, miejsce docelowe i numer telefonu. Wrócimy z kolejnym krokiem.'},
+        beauty:{servicesTitle:'Wybierz usługę dopasowaną do efektu',servicesLead:'Krótko i jasno pokazujemy, czym różnią się usługi, żeby klient łatwiej wybrał właściwą.',ctaTitle:'Chcesz umówić wizytę?',ctaLead:'Wybierz usługę i zostaw kontakt. Ustalimy dogodny termin.',contactTitle:'Umówmy Twoją wizytę',contactLead:'Napisz, jaka usługa Cię interesuje i zostaw numer telefonu lub e-mail.'},
+        general:{servicesTitle:'Zobacz, w czym możemy pomóc',servicesLead:'Oferta jest podzielona na konkretne usługi, żeby klient szybko znalazł właściwy zakres.',ctaTitle:'Masz zlecenie do omówienia?',ctaLead:'Opisz krótko, czego potrzebujesz. Wrócimy z konkretnym następnym krokiem.',contactTitle:'Porozmawiajmy o Twoim zleceniu',contactLead:'Zostaw kontakt i krótki opis potrzeby. Im więcej konkretów, tym łatwiej przygotować sensowną odpowiedź.'}
+      };
+      return map[cat]||map.general
+    }
     function initials(name='Firma'){return name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'F'}
     function slugify(s=''){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'').slice(0,28)||'twojafirma'}
     function domainIdeas(d){const base=slugify(d.company);const city=slugify(d.city);return [...new Set([`${base}.pl`,city?`${base}-${city}.pl`:null,`${base}24.pl`].filter(Boolean))]}
     function photoCaption(d,i){const services=normalizeServices(d.services||'');const label=services[i%Math.max(services.length,1)]||'Realizacja';return `${label} • ${d.city||d.company||'realizacja'}`}
 
+    // ===== BeeFlow v8: warstwa semantyczna treści =====
+    function businessContext(d=chat.data){return [d.businessBrief,d.industry,d.services,d.usp].filter(Boolean).join(' ').toLowerCase()}
+    function deriveIndustryLabel(text=''){
+      const x=String(text).toLowerCase();
+      if(/bram|ogrodz|furt|spaw|stal/.test(x))return 'Bramy i ogrodzenia';
+      if(/detail|auto|samoch|lakier|ceram|poler/.test(x))return 'Detailing samochodowy';
+      if(/budow|remont|wykoń|wykoncz|elewac|mur/.test(x))return 'Usługi budowlane';
+      if(/fryz|beauty|kosmet|paznok|makija/.test(x))return 'Beauty';
+      if(/transport|przeprowad|kurier|dostaw/.test(x))return 'Transport';
+      if(/hydraul|instalac|wod-kan|ogrzew/.test(x))return 'Hydraulika i instalacje';
+      if(/elektryk|elektrycz|instalacja elek/.test(x))return 'Usługi elektryczne';
+      if(/klimatyz|wentyl/.test(x))return 'Klimatyzacja i wentylacja';
+      if(/sprząt|sprzatan|clean/.test(x))return 'Usługi sprzątające';
+      const words=String(text).replace(/[^\p{L}\p{N} ]/gu,' ').trim().split(/\s+/).filter(Boolean).slice(0,4);
+      return words.length?words.join(' '):'Profesjonalne usługi';
+    }
+    function industryLabel(industry=''){return deriveIndustryLabel(industry)}
+    function businessFeatures(d=chat.data){
+      const x=businessContext(d), f=[];
+      const add=v=>{if(v&&!f.includes(v))f.push(v)};
+      if(/własna produk|wlasna produk|od zera|produkuj/.test(x))add('Własna produkcja');
+      if(/pomiar|mierzymy|wymiar/.test(x))add('Pomiar i wykonanie pod wymiar');
+      if(/projekt|wizual|pomysł klienta|pomysl klienta/.test(x))add('Projekt dopasowany do pomysłu klienta');
+      if(/montaż|montaz|montujemy/.test(x))add('Montaż gotowej realizacji');
+      if(/malow|lakier|proszk/.test(x))add('Wykończenie i zabezpieczenie');
+      if(/transport|dowóz|dowoz|dostaw/.test(x))add('Transport gotowych elementów');
+      if(/6 metr|6-met|sztang stal/.test(x))add('Produkcja z pełnych profili stalowych');
+      if(/szybk|termin/.test(x))add('Sprawny termin realizacji');
+      if(/indywidual|pod klient/.test(x))add('Indywidualne podejście');
+      return f.slice(0,5)
+    }
+    function cleanUsp(usp=''){
+      const x=String(usp).trim(); if(!x||/^(pomiń|brak)$/i.test(x))return '';
+      const low=x.toLowerCase();
+      if(/własna produk|wlasna produk/.test(low))return 'Własna produkcja od konstrukcji po gotowy wyrób';
+      if(/pomiar|wymiar/.test(low))return 'Wykonanie dokładnie pod wymiar';
+      if(/projekt|wizual/.test(low))return 'Projekt dopasowany do pomysłu klienta';
+      if(/kontakt/.test(low))return 'Bezpośredni kontakt na każdym etapie';
+      if(/termin/.test(low))return 'Terminowe i jasno ustalone realizacje';
+      return 'Indywidualne wykonanie dopasowane do zlecenia';
+    }
+    function categoryKey(d=chat.data){
+      const x=businessContext(d);
+      if(/bram|ogrodz|furt|spaw|stal/.test(x))return 'gates';
+      if(/detail|auto|samoch|lakier|ceram|poler/.test(x))return 'auto';
+      if(/budow|remont|wykoń|wykoncz/.test(x))return 'build';
+      if(/fryz|beauty|kosmet|paznok/.test(x))return 'beauty';
+      if(/transport|przeprowad|kurier|dostaw/.test(x))return 'transport';
+      return 'general'
+    }
+    function heroTitle(d){
+      if((d.headline||'').trim())return d.headline.trim();
+      const cat=categoryKey(d), variants={
+        gates:['Bramy i ogrodzenia tworzone pod konkretną posesję.','Od pomysłu i pomiaru do gotowej bramy.','Solidna stal. Dobry projekt. Realizacja pod wymiar.'],
+        auto:['Detailing, po którym naprawdę widać różnicę.','Zadbaj o auto od lakieru po wnętrze.','Efekt, który widać od pierwszego spojrzenia.'],
+        build:['Realizacja zaczyna się od dobrego planu.','Prace wykonane konkretnie, etap po etapie.','Od ustaleń do gotowego efektu bez chaosu.'],
+        beauty:['Miejsce, do którego chce się wracać.','Profesjonalna usługa i efekt dopasowany do Ciebie.','Zadbaj o siebie w dobrych rękach.'],
+        transport:['Transport bez zbędnego komplikowania.','Sprawna trasa, jasne warunki, terminowa realizacja.','Przewozimy konkretnie i na czas.'],
+        general:[`${d.company||'Twoja firma'} — konkretnie od pierwszego kontaktu.`,`${d.company||'Twoja firma'} — usługa dopasowana do realnej potrzeby.`,`Dobra usługa zaczyna się od dobrych ustaleń.`]
+      };
+      const list=variants[cat]||variants.general;return list[hashString((d.company||'')+(d.city||''))%list.length]
+    }
+    function heroLead(d){
+      const cat=categoryKey(d), area=d.city?`Działamy w ${d.city} i okolicy.`:'Działamy lokalnie.';
+      const feature=businessFeatures(d)[0];
+      if(cat==='gates')return `${feature||'Wykonujemy konstrukcje pod wymiar'} — od rozmowy i pomiaru po wykonanie i montaż. ${area}`;
+      if(cat==='auto')return `Dobieramy zakres do stanu auta i oczekiwanego efektu, a przed pracą jasno ustalamy, co robimy. ${area}`;
+      if(cat==='build')return `Najpierw ustalamy zakres, potem realizujemy go etapami i na bieżąco informujemy, co dzieje się dalej. ${area}`;
+      if(cat==='transport')return `Ustalamy trasę, zakres przewozu i termin, żeby klient od początku wiedział, czego się spodziewać. ${area}`;
+      return `Zakres dobieramy do konkretnego zlecenia, z jasnymi ustaleniami przed startem. ${area}`
+    }
+    function serviceDesc(name,industry=''){
+      const n=String(name).toLowerCase(), ctx=(n+' '+String(industry).toLowerCase());
+      if(/spawan|spaw/.test(n))return 'Konstrukcję wykonujemy pod ustalone wymiary, z doborem profili i wzmocnień do konkretnego sposobu użytkowania.';
+      if(/bram.*przesuw|przesuw.*bram/.test(ctx))return 'Dobieramy długość skrzydła, przeciwwagę i prowadzenie do światła wjazdu oraz warunków na posesji.';
+      if(/bram/.test(n))return 'Od pomiaru i ustalenia wzoru po wykonanie konstrukcji, dopasowanie okuć i przygotowanie całości do montażu.';
+      if(/ogrodz/.test(n))return 'Dobieramy układ i proporcje ogrodzenia do działki, bramy oraz oczekiwanego poziomu prywatności.';
+      if(/furt/.test(n))return 'Furtkę dopasowujemy stylistycznie i wymiarowo do bramy, ogrodzenia oraz istniejących słupków.';
+      if(/malow|lakier|proszk/.test(n))return 'Przygotowujemy powierzchnię i zabezpieczamy stal tak, aby wykończenie było estetyczne i odporne na warunki zewnętrzne.';
+      if(/montaż|montaz/.test(n))return 'Na miejscu ustawiamy konstrukcję, regulujemy pracę elementów i sprawdzamy całość przed przekazaniem klientowi.';
+      if(/transport|dowóz|dowoz|dostaw/.test(n))return 'Gotowe elementy zabezpieczamy do przewozu i dostarczamy na miejsce w sposób dopasowany do gabarytu realizacji.';
+      if(/pomiar/.test(n))return 'Przyjeżdżamy na miejsce, sprawdzamy wymiary i warunki montażu, żeby projekt od początku pasował do posesji.';
+      if(/projekt|wizual/.test(n))return 'Na podstawie pomysłu klienta przygotowujemy kierunek wykonania i ustalamy wygląd przed rozpoczęciem produkcji.';
+      if(/automat|napęd|naped/.test(n))return 'Dobieramy rozwiązanie do ciężaru i sposobu pracy bramy, a po montażu konfigurujemy podstawowe ustawienia.';
+      if(/ceram/.test(n))return 'Dobieramy powłokę do sposobu użytkowania auta i oczekiwanego poziomu ochrony lakieru.';
+      if(/poler|korekt/.test(n))return 'Poprawiamy wygląd lakieru, ograniczamy widoczność zarysowań i przygotowujemy powierzchnię do zabezpieczenia.';
+      if(/pran|wnętr|wnetr/.test(n))return 'Czyścimy wnętrze metodą dopasowaną do materiału i stopnia zabrudzenia, bez robienia wszystkiego jednym środkiem.';
+      if(/remont|wykoń|wykoncz/.test(n))return 'Ustalamy zakres przed startem, kolejność prac i sposób odbioru, żeby realizacja była przewidywalna.';
+      return `Usługę „${name}” wyceniamy po krótkim ustaleniu zakresu, potrzebnych materiałów i warunków wykonania.`
+    }
+    function aboutCopy(d){
+      const cat=categoryKey(d), f=businessFeatures(d), area=d.city?`Obsługujemy ${d.city} i pobliskie miejscowości.`:'';
+      if(cat==='gates')return `${d.company||'Firma'} projektuje i wykonuje bramy oraz elementy ogrodzeń pod konkretną posesję. Zaczynamy od rozmowy i pomiaru, następnie ustalamy rozwiązanie, wykonujemy konstrukcję i przygotowujemy ją do montażu. ${area}`.trim();
+      if(cat==='auto')return `${d.company||'Firma'} zajmuje się pielęgnacją i zabezpieczeniem samochodów. Zakres dobieramy do stanu auta oraz efektu, który klient chce osiągnąć. ${area}`.trim();
+      if(cat==='build')return `${d.company||'Firma'} realizuje prace po wcześniejszym ustaleniu zakresu, kolejności i oczekiwanego efektu. Stawiamy na czytelne ustalenia i sprawny kontakt podczas realizacji. ${area}`.trim();
+      return `${d.company||'Firma'} realizuje zlecenia w oparciu o wcześniej ustalony zakres i realne potrzeby klienta. ${f.length?f.slice(0,2).join(' oraz ')+'. ':''}${area}`.trim()
+    }
+    function trustItems(d){
+      const cat=categoryKey(d), f=businessFeatures(d);
+      if(cat==='gates')return [[f.includes('Pomiar i wykonanie pod wymiar')?'Pomiar i wykonanie pod wymiar':'Wykonanie pod wymiar','Konstrukcja dopasowana do konkretnego wjazdu'],[f.includes('Własna produkcja')?'Własna produkcja':'Ustalony proces','Od materiału i spawania po gotowy element'],['Lokalna obsługa',`${d.city||'Twoja okolica'} i okolice`]];
+      if(cat==='auto')return [['Dobór zakresu','Usługa dopasowana do stanu auta'],['Dbałość o detal','Nacisk na efekt końcowy'],['Wygodny kontakt','Szybkie ustalenie terminu']];
+      return [['Jasne ustalenia','Zakres omawiamy przed startem'],['Konkretny kontakt','Wiadomo, co dzieje się dalej'],['Lokalna obsługa',`${d.city||'Twoja okolica'} i okolice`]]
+    }
+    function whyCards(d){
+      const f=businessFeatures(d), cat=categoryKey(d), cards=[];
+      if(f.includes('Własna produkcja'))cards.push(['Własna produkcja','Mamy kontrolę nad wykonaniem konstrukcji od początku do końca.']);
+      if(f.includes('Pomiar i wykonanie pod wymiar'))cards.push(['Pomiar na miejscu','Wymiary i warunki montażu ustalamy przed rozpoczęciem wykonania.']);
+      if(f.includes('Projekt dopasowany do pomysłu klienta'))cards.push(['Projekt pod klienta','Punktem wyjścia jest pomysł klienta, który przekładamy na wykonalne rozwiązanie.']);
+      if(f.includes('Montaż gotowej realizacji'))cards.push(['Montaż i regulacja','Po wykonaniu ustawiamy elementy i sprawdzamy ich pracę na miejscu.']);
+      if(cat==='gates'&&cards.length<4)cards.push(['Dobór konstrukcji','Profile, wzmocnienia i sposób wykonania dobieramy do konkretnej realizacji.']);
+      while(cards.length<4){const defaults=[['Czytelna wycena','Najpierw ustalamy zakres, dopiero potem przechodzimy do kosztu.'],['Dobry kontakt','Klient wie, jaki jest następny krok.'],['Dopasowanie do zlecenia','Nie wciskamy jednego rozwiązania każdemu.'],['Kontrola wykonania','Przed odbiorem sprawdzamy najważniejsze elementy realizacji.']];const n=defaults.find(x=>!cards.some(c=>c[0]===x[0]));if(!n)break;cards.push(n)}
+      return cards.slice(0,4)
+    }
+
+    // Chat v8: opis firmy jest materiałem roboczym, a nie tekstem do wklejenia 1:1.
+    function fieldLabel(key){return ({company:'nazwa firmy',businessBrief:'opis firmy do analizy',industry:'branża / kategoria',city:'obszar działania',services:'usługi',style:'styl strony',usp:'wyróżnik firmy',phone:'telefon',email:'e-mail'})[key]||key}
+    function commitPending(){
+      const key=chat.pendingKey,value=chat.pendingValue;
+      if(key==='businessBrief'){chat.data.businessBrief=value;chat.data.industry=deriveIndustryLabel(value)}else chat.data[key]=value;
+      chat.pendingKey=null;chat.pendingValue='';chat.phase='ask';
+      const advancesCurrent=questions[chat.step]&&questions[chat.step].key===key;if(advancesCurrent)chat.step++;
+      if(key==='company')chat.needsName=false;
+      if(key==='businessBrief'&&chat.needsName){setTimeout(offerNameSuggestion,180);return}
+      if(chat.step>=questions.length){setTimeout(startExtras,180);return}
+      setTimeout(askCurrent,180)
+    }
+    function handleConfirmation(answerText){
+      if(chat.phase!=='confirm')return;
+      if(answerText==='yes'||isYes(answerText)){commitPending();return}
+      chat.phase='ask';const key=chat.pendingKey;chat.pendingValue='';
+      if(key==='company'){
+        if(!chat.data.businessBrief){chat.needsName=true;chat.step=1;ai('Jasne. Najpierw poznam firmę, żeby kolejna nazwa miała sens. Opis wykorzystam tylko do analizy — nie wkleję go później 1:1 na stronę.');setTimeout(askCurrent,180);return}
+        chat.nameRound++;offerNameSuggestion(true);return
+      }
+      ai(`Jasne. Poprawmy ${fieldLabel(key)}. Napisz właściwą wersję, a najpierw ją potwierdzę.`)
+    }
+    function detectGlobalCorrection(t){
+      const x=t.toLowerCase();if(/inna\s+nazwa|zmień\s+nazw|zmien\s+nazw|nie.*nazwa/.test(x)){chat.nameRound++;offerNameSuggestion(true);return true}
+      const map=[['miast','city'],['obszar','city'],['usług','services'],['styl','style'],['telefon','phone'],['mail','email'],['e-mail','email'],['wyróż','usp'],['opis firmy','businessBrief'],['branż','businessBrief']];
+      for(const [needle,key] of map){if((x.includes('zmień')||x.includes('zmien')||x.includes('popraw'))&&x.includes(needle)){chat.phase='ask';chat.pendingKey=key;chat.step=Math.max(0,questions.findIndex(q=>q.key===key));ai(`Okej — wracamy do pola „${fieldLabel(key)}”. Podaj nową wersję.`);return true}}return false
+    }
+
     function renderDemo(save=false){
-      const d=chat.data;const services=normalizeServices(d.services||'Profesjonalna obsługa, Indywidualna wycena, Szybka realizacja');const heroPhoto=d.photos[0]||d.projectPhotos[0]||'';const email=/pomiń/i.test(d.email||'')?'':d.email;const cls=themeClass(d.style);const layout=layoutClass(d);const domains=domainIdeas(d);const trust=trustItems(d);const why=whyCards(d);const extras=d.extras||[];
+      const d=chat.data;const copy=siteCopy(d);const services=normalizeServices(d.services||'Profesjonalna obsługa, Indywidualna wycena, Szybka realizacja');const heroPhoto=d.photos[0]||d.projectPhotos[0]||'';const email=/pomiń/i.test(d.email||'')?'':d.email;const cls=themeClass(d.style);const layout=layoutClass(d);const domains=domainIdeas(d);const trust=trustItems(d);const why=whyCards(d);const extras=d.extras||[];
       const logo=d.logo?`<img class="demoLogo" src="${d.logo}" alt="Logo ${esc(d.company)}">`:`<span class="demoLogoFallback">${esc(initials(d.company))}</span>`;
       const gallery=d.photos.length?`<section class="demoSection alt" id="demo-realizacje"><div class="demoSectionTitleRow"><div><span class="demoEyebrow">Realizacje</span><h3>Zobacz wybrane realizacje</h3></div><div class="miniCopy">Kliknij zdjęcie — otworzy się pełnoekranowy pokaz slajdów dopasowany do telefonu, tabletu lub komputera.</div></div><div class="demoGallery">${d.photos.map((x,i)=>`<button type="button" class="demoGalleryItem" data-gallery-kind="realizations" data-gallery-index="${i}" aria-label="Powiększ realizację ${i+1}"><img src="${x}" alt="${esc(photoCaption(d,i))}"><span class="galleryZoomBadge">⛶ Powiększ</span></button>`).join('')}</div></section>`:'';
       const projects=d.projectPhotos.length?`<section class="demoSection" id="demo-projekty"><div class="demoSectionTitleRow"><div><span class="demoEyebrow">Projekty</span><h3>Projekty i wizualizacje</h3></div><div class="miniCopy">Koncepcje przed realizacją — klient może zobaczyć kierunek projektu jeszcze przed wykonaniem.</div></div><div class="projectGrid">${d.projectPhotos.map((x,i)=>`<button class="projectCard" type="button" data-gallery-kind="projects" data-gallery-index="${i}"><img src="${x}" alt="Projekt ${i+1}"><span class="projectCardBody"><b>Projekt ${String(i+1).padStart(2,'0')}</b><span>Kliknij, aby otworzyć pełny podgląd</span></span></button>`).join('')}</div></section>`:'';
       const faq=extras.some(x=>/faq/i.test(x))?`<section class="demoSection alt"><div class="demoSectionHead"><span class="demoEyebrow">FAQ</span><h3>Najczęstsze pytania</h3></div><div class="demoWhyCards"><div class="demoWhyCard"><b>Jak wygląda wycena?</b><span>Najpierw zbieramy zakres i potrzebne wymiary, a potem przedstawiamy konkretny kolejny krok.</span></div><div class="demoWhyCard"><b>Czy można zamówić usługę pod wymiar?</b><span>Tak — zakres dopasowujemy do konkretnego zlecenia i warunków na miejscu.</span></div><div class="demoWhyCard"><b>Jaki jest termin?</b><span>Termin zależy od zakresu. Po krótkiej rozmowie możemy podać realny przedział.</span></div></div></section>`:'';
       const priceSection=extras.some(x=>/cennik/i.test(x))?`<section class="demoSection"><div class="demoSectionHead"><span class="demoEyebrow">Wycena</span><h3>Cena zależy od zakresu</h3><p class="demoSectionLead">Zamiast przypadkowych widełek pokazujemy klientowi, od czego zależy koszt i kierujemy go do szybkiej wyceny.</p></div><div class="demoWhyCards"><div class="demoWhyCard"><b>Wymiary / zakres</b><span>Wpływają na ilość materiału i czas pracy.</span></div><div class="demoWhyCard"><b>Wykończenie</b><span>Rodzaj wykonania i dodatkowe opcje zmieniają końcową cenę.</span></div><div class="demoWhyCard"><b>Montaż</b><span>Warunki na miejscu uwzględniamy przed finalną wyceną.</span></div></div></section>`:'';
       const reviews=extras.some(x=>/opini/i.test(x))?`<section class="demoSection alt"><div class="demoSectionHead"><span class="demoEyebrow">Opinie</span><h3>Miejsce na opinie klientów</h3><p class="demoSectionLead">Po uruchomieniu możemy podpiąć prawdziwe opinie z Google lub dodać zweryfikowane referencje.</p></div></section>`:'';
-      const about=`<section class="demoSection alt"><div class="demoWhy"><div><span class="demoEyebrow">O firmie</span><h3>${esc(d.company||'Poznaj nas bliżej')}</h3><p class="demoAboutText">${esc(aboutCopy(d))}</p><div class="demoWhyCards">${why.map(x=>`<div class="demoWhyCard"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div></div><div class="demoQuote"><b>${esc(cleanUsp(d.usp)||'Dobra realizacja zaczyna się od dobrych ustaleń.')}</b><p>${esc(d.city?`Działamy na obszarze: ${d.city} i okolice. Każde zapytanie omawiamy indywidualnie, żeby dobrać rozwiązanie do realnej potrzeby klienta.`:'Każde zapytanie omawiamy indywidualnie, żeby dobrać rozwiązanie do realnej potrzeby klienta.')}</p><span class="quoteMeta">${esc(d.company||'Twoja firma')}</span></div></div></section>`;
-      const servicesHtml=`<section class="demoSection" id="demo-uslugi"><div class="demoSectionHead"><span class="demoEyebrow">Oferta</span><h3>Usługi dopasowane do Twoich potrzeb</h3><p class="demoSectionLead">Konkretnie opisane usługi pomagają klientowi szybko ocenić, czy jesteś właściwą firmą do jego zlecenia.</p></div><div class="demoServices">${services.map((x,i)=>`<article class="demoService"><span class="demoServiceNo">${String(i+1).padStart(2,'0')}</span><h4>${esc(x)}</h4><p>${esc(serviceDesc(x,d.industry))}</p><span class="demoServiceTag">Zapytaj o wycenę</span></article>`).join('')}</div></section>`;
+      const about=`<section class="demoSection alt"><div class="demoWhy"><div><span class="demoEyebrow">O firmie</span><h3>${esc(d.company||'Poznaj nas bliżej')}</h3><p class="demoAboutText">${esc(aboutCopy(d))}</p><div class="demoWhyCards">${why.map(x=>`<div class="demoWhyCard"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div></div><div class="demoQuote"><b>${esc((businessFeatures(d)[0]||cleanUsp(d.usp)||'Dobra realizacja zaczyna się od dobrych ustaleń.'))}</b><p>${esc(d.city?`Działamy w ${d.city} i okolicy. Najpierw ustalamy realną potrzebę klienta, a dopiero potem dobieramy rozwiązanie i zakres wykonania.`:'Najpierw ustalamy realną potrzebę klienta, a dopiero potem dobieramy rozwiązanie i zakres wykonania.')}</p><span class="quoteMeta">${esc(d.company||'Twoja firma')}</span></div></div></section>`;
+      const servicesHtml=`<section class="demoSection" id="demo-uslugi"><div class="demoSectionHead"><span class="demoEyebrow">Oferta</span><h3>${esc(copy.servicesTitle)}</h3><p class="demoSectionLead">${esc(copy.servicesLead)}</p></div><div class="demoServices">${services.map((x,i)=>`<article class="demoService"><span class="demoServiceNo">${String(i+1).padStart(2,'0')}</span><h4>${esc(x)}</h4><p>${esc(serviceDesc(x,d.industry))}</p><span class="demoServiceTag">Zapytaj o wycenę</span></article>`).join('')}</div></section>`;
       const midSections=layout==='layout-showcase'?(gallery+projects+servicesHtml+about):(servicesHtml+about+gallery+projects);
       const navProjects=d.projectPhotos.length?'<a href="#demo-projekty">Projekty</a>':'';
       generatedSite.innerHTML=`<div class="clientDemo ${cls} ${layout}">
@@ -377,8 +531,8 @@
         <section class="demoSiteHero ${heroPhoto?'hasPhoto':''}">${heroPhoto?`<img class="demoHeroPhoto" src="${heroPhoto}" alt="${esc(d.company)}">`:''}<div class="demoHeroContent"><div class="demoKicker"><span class="demoPill">${esc(d.city||'Twoja okolica')}</span><span class="demoPill secondary">${esc(industryLabel(d.industry))}</span></div><h2>${esc(heroTitle(d))}</h2><p>${esc(heroLead(d))}</p><div class="demoHeroActions"><a class="demoCTA" href="#demo-kontakt">Poproś o wycenę</a>${d.photos.length?'<a class="demoCTA ghost" href="#demo-realizacje">Zobacz realizacje</a>':''}</div></div></section>
         <div class="demoTrust">${trust.map(x=>`<div class="demoTrustItem"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>
         ${midSections}${faq}${priceSection}${reviews}
-        <div class="demoCtaBand"><div><h3>Masz pomysł na realizację?</h3><p>Opisz krótko, czego potrzebujesz. Odezwiemy się z kolejnym krokiem i informacją, jak możemy pomóc.</p></div><a class="demoCTA" href="#demo-kontakt">Skontaktuj się</a></div>
-        <section class="demoContact" id="demo-kontakt"><div class="demoContactGrid"><div><span class="demoPill">Kontakt</span><h3>Porozmawiajmy o Twoim zleceniu</h3><p>Wypełnij formularz albo skontaktuj się bezpośrednio. Im więcej konkretów podasz, tym szybciej możemy przygotować odpowiedź.</p><div class="demoContactList"><div class="demoContactItem"><b>Telefon</b><br>${esc(d.phone||'do uzupełnienia')}</div>${email?`<div class="demoContactItem"><b>E-mail</b><br>${esc(email)}</div>`:''}<div class="demoContactItem"><b>Obszar działania</b><br>${esc(d.city||'do uzupełnienia')} i okolice</div></div></div><form class="demoRealForm" data-demo-form><h4>Poproś o bezpłatną wycenę</h4><p class="formIntro">Zostaw kontakt i krótko opisz, czego potrzebujesz.</p><div class="demoField"><label>Imię i nazwisko</label><input name="name" required placeholder="Np. Jan Kowalski"></div><div class="demoField"><label>Telefon</label><input name="phone" required placeholder="Np. 500 000 000"></div><div class="demoField"><label>E-mail <span style="font-weight:500;color:#8693a0">(opcjonalnie)</span></label><input name="email" type="email" placeholder="Np. kontakt@firma.pl"></div><div class="demoField"><label>W czym możemy pomóc?</label><select name="service"><option value="">Wybierz usługę</option>${services.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div><div class="demoField"><label>Krótki opis zlecenia</label><textarea name="message" placeholder="Napisz np. wymiary, termin lub czego dokładnie potrzebujesz"></textarea></div><button class="demoCTA demoFormSubmit" type="submit">Wyślij zapytanie</button><div class="demoFormSuccess">✓ Demo: zgłoszenie zapisane jako lead w tej przeglądarce.</div></form></div></section>
+        <div class="demoCtaBand"><div><h3>${esc(copy.ctaTitle)}</h3><p>${esc(copy.ctaLead)}</p></div><a class="demoCTA" href="#demo-kontakt">Skontaktuj się</a></div>
+        <section class="demoContact" id="demo-kontakt"><div class="demoContactGrid"><div><span class="demoPill">Kontakt</span><h3>${esc(copy.contactTitle)}</h3><p>${esc(copy.contactLead)}</p><div class="demoContactList"><div class="demoContactItem"><b>Telefon</b><br>${esc(d.phone||'do uzupełnienia')}</div>${email?`<div class="demoContactItem"><b>E-mail</b><br>${esc(email)}</div>`:''}<div class="demoContactItem"><b>Obszar działania</b><br>${esc(d.city||'do uzupełnienia')} i okolice</div></div></div><form class="demoRealForm" data-demo-form><h4>Poproś o bezpłatną wycenę</h4><p class="formIntro">Zostaw kontakt i krótko opisz, czego potrzebujesz.</p><div class="demoField"><label>Imię i nazwisko</label><input name="name" required placeholder="Np. Jan Kowalski"></div><div class="demoField"><label>Telefon</label><input name="phone" required placeholder="Np. 500 000 000"></div><div class="demoField"><label>E-mail <span style="font-weight:500;color:#8693a0">(opcjonalnie)</span></label><input name="email" type="email" placeholder="Np. kontakt@firma.pl"></div><div class="demoField"><label>W czym możemy pomóc?</label><select name="service"><option value="">Wybierz usługę</option>${services.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div><div class="demoField"><label>Krótki opis zlecenia</label><textarea name="message" placeholder="Napisz np. wymiary, termin lub czego dokładnie potrzebujesz"></textarea></div><button class="demoCTA demoFormSubmit" type="submit">Wyślij zapytanie</button><div class="demoFormSuccess">✓ Demo: zgłoszenie zapisane jako lead w tej przeglądarce.</div></form></div></section>
         <div class="domainIdeas"><b>Propozycje domen dla tej firmy</b><div class="domainChips">${domains.map(x=>`<span class="domainChip">${esc(x)}</span>`).join('')}</div></div>
         <div class="previewNote">🔒 To jest wersja demonstracyjna. Publikacja, domena, baza leadów, pełny chatbot AI, generowanie treści/logo przez model AI i integracje są aktywowane po wybraniu pakietu.</div>
         <button class="clientChatBtn" type="button" data-client-chat-toggle aria-label="Otwórz asystenta">💬</button>
@@ -402,12 +556,12 @@
       }
     }
 
-    let galleryIndex=0,galleryItems=[],galleryType='realizations';
+    let galleryIndex=0,galleryItems=[],galleryType='realizations',galleryReturnScroll=0,galleryReturnEl=null;
     function gallerySource(kind){if(kind==='projects')return chat.data.projectPhotos||[];return chat.data.photos||[]}
     function galleryCaption(kind,i){if(kind==='projects')return `Projekt / wizualizacja ${i+1} • ${chat.data.company||'firma'}`;return photoCaption(chat.data,i)}
-    function renderLightboxThumbs(){const box=document.getElementById('lbThumbs');box.innerHTML='';galleryItems.forEach((src,i)=>{const b=document.createElement('button');b.type='button';b.className='lbThumb'+(i===galleryIndex?' active':'');b.innerHTML=`<img src="${src}" alt="Miniatura ${i+1}">`;b.onclick=()=>openLightbox(i,galleryType);box.appendChild(b)});setTimeout(()=>box.querySelector('.active')?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}),0)}
-    function openLightbox(i,kind='realizations'){galleryType=kind;galleryItems=gallerySource(kind);if(!galleryItems.length)return;galleryIndex=(i+galleryItems.length)%galleryItems.length;document.getElementById('lbImg').src=galleryItems[galleryIndex];document.getElementById('lbCaption').textContent=galleryCaption(kind,galleryIndex);document.getElementById('lbTitle').textContent=kind==='projects'?'Projekty i wizualizacje':'Realizacje';document.getElementById('lbCounter').textContent=`${galleryIndex+1} / ${galleryItems.length}`;renderLightboxThumbs();const lb=document.getElementById('lightbox');lb.classList.add('show');lb.setAttribute('aria-hidden','false');document.body.style.overflow='hidden'}
-    function closeLightbox(){const lb=document.getElementById('lightbox');lb.classList.remove('show');lb.setAttribute('aria-hidden','true');if(overlay.classList.contains('show'))document.body.style.overflow='hidden';else document.body.style.overflow=''}
+    function renderLightboxThumbs(){const box=document.getElementById('lbThumbs');box.innerHTML='';galleryItems.forEach((src,i)=>{const b=document.createElement('button');b.type='button';b.className='lbThumb'+(i===galleryIndex?' active':'');b.innerHTML=`<img src="${src}" alt="Miniatura ${i+1}">`;b.onclick=()=>openLightbox(i,galleryType,false);box.appendChild(b)});const active=box.querySelector('.active');if(active){const left=Math.max(0,active.offsetLeft-box.clientWidth/2+active.clientWidth/2);box.scrollTo({left,behavior:'smooth'})}}
+    function openLightbox(i,kind='realizations',remember=true){galleryType=kind;galleryItems=gallerySource(kind);if(!galleryItems.length)return;if(remember&&!document.getElementById('lightbox').classList.contains('show')){galleryReturnScroll=overlay.scrollTop;galleryReturnEl=document.activeElement}galleryIndex=(i+galleryItems.length)%galleryItems.length;document.getElementById('lbImg').src=galleryItems[galleryIndex];document.getElementById('lbCaption').textContent=galleryCaption(kind,galleryIndex);document.getElementById('lbTitle').textContent=kind==='projects'?'Projekty i wizualizacje':'Realizacje';document.getElementById('lbCounter').textContent=`${galleryIndex+1} / ${galleryItems.length}`;renderLightboxThumbs();const lb=document.getElementById('lightbox');if(lb.parentElement!==document.body)document.body.appendChild(lb);lb.classList.add('show');lb.setAttribute('aria-hidden','false');document.body.classList.add('gallery-open');document.body.style.overflow='hidden'}
+    function closeLightbox(){const lb=document.getElementById('lightbox');lb.classList.remove('show');lb.setAttribute('aria-hidden','true');document.body.classList.remove('gallery-open');if(overlay.classList.contains('show')){document.body.style.overflow='hidden';requestAnimationFrame(()=>{overlay.scrollTop=galleryReturnScroll;requestAnimationFrame(()=>{overlay.scrollTop=galleryReturnScroll;if(galleryReturnEl&&typeof galleryReturnEl.focus==='function')galleryReturnEl.focus({preventScroll:true})})})}else document.body.style.overflow=''}
     function saveClientLead(fd){try{const leads=JSON.parse(localStorage.getItem('beeflow_leads')||'[]');leads.push({source:'client_demo_form',clientCompany:chat.data.company,name:fd.get('name'),phone:fd.get('phone'),email:fd.get('email'),service:fd.get('service'),message:fd.get('message'),createdAt:new Date().toISOString()});localStorage.setItem('beeflow_leads',JSON.stringify(leads))}catch(e){}}
     function clientReply(text){const panel=generatedSite.querySelector('[data-client-chat-panel]');const box=generatedSite.querySelector('[data-client-chat-msgs]');if(!box)return;const u=document.createElement('div');u.className='clientBubble user';u.textContent=text;box.appendChild(u);const a=document.createElement('div');a.className='clientBubble ai';const services=normalizeServices(chat.data.services||'');const match=services.find(x=>text.toLowerCase().includes(x.toLowerCase()));a.textContent=match?`Jasne — ${match} jest w naszej ofercie. Napisz krótko, czego potrzebujesz, albo zostaw numer w formularzu, a wrócimy z konkretną odpowiedzią.`:`Dzięki za wiadomość. Mogę pomóc dobrać usługę i zebrać dane do wyceny. Napisz, czego dokładnie potrzebujesz, albo zostaw kontakt w formularzu poniżej.`;setTimeout(()=>{box.appendChild(a);box.scrollTop=box.scrollHeight},220);box.scrollTop=box.scrollHeight;if(panel)panel.classList.add('open')}
     function bindDemoInteractions(){
@@ -456,7 +610,7 @@
     document.getElementById('backToChat').onclick=()=>{toggleLiveEditor(false);overlay.classList.remove('show');overlay.setAttribute('aria-hidden','true');document.body.style.overflow='';setTimeout(()=>inp.focus(),100)};
     document.getElementById('choosePlan').onclick=()=>{toggleLiveEditor(false);overlay.classList.remove('show');overlay.setAttribute('aria-hidden','true');document.body.style.overflow='';location.hash='cennik'};
     document.getElementById('previewShell').addEventListener('contextmenu',e=>e.preventDefault());
-    document.getElementById('lbClose').onclick=closeLightbox;document.getElementById('lbPrev').onclick=()=>openLightbox(galleryIndex-1,galleryType);document.getElementById('lbNext').onclick=()=>openLightbox(galleryIndex+1,galleryType);let lbTouchX=null;const lbStage=document.getElementById('lbStage');lbStage.addEventListener('touchstart',e=>{if(e.touches.length===1)lbTouchX=e.touches[0].clientX},{passive:true});lbStage.addEventListener('touchend',e=>{if(lbTouchX===null||!e.changedTouches.length)return;const dx=e.changedTouches[0].clientX-lbTouchX;lbTouchX=null;if(Math.abs(dx)<45)return;if(dx<0)openLightbox(galleryIndex+1,galleryType);else openLightbox(galleryIndex-1,galleryType)},{passive:true});document.addEventListener('keydown',e=>{if(!document.getElementById('lightbox').classList.contains('show'))return;if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')openLightbox(galleryIndex-1,galleryType);if(e.key==='ArrowRight')openLightbox(galleryIndex+1,galleryType)});bindLiveEditor();
+    const initialLightbox=document.getElementById('lightbox');if(initialLightbox&&initialLightbox.parentElement!==document.body)document.body.appendChild(initialLightbox);document.getElementById('lbClose').onclick=closeLightbox;document.getElementById('lbPrev').onclick=()=>openLightbox(galleryIndex-1,galleryType,false);document.getElementById('lbNext').onclick=()=>openLightbox(galleryIndex+1,galleryType,false);let lbTouchX=null;const lbStage=document.getElementById('lbStage');lbStage.addEventListener('touchstart',e=>{if(e.touches.length===1)lbTouchX=e.touches[0].clientX},{passive:true});lbStage.addEventListener('touchend',e=>{if(lbTouchX===null||!e.changedTouches.length)return;const dx=e.changedTouches[0].clientX-lbTouchX;lbTouchX=null;if(Math.abs(dx)<45)return;if(dx<0)openLightbox(galleryIndex+1,galleryType,false);else openLightbox(galleryIndex-1,galleryType,false)},{passive:true});document.addEventListener('keydown',e=>{if(!document.getElementById('lightbox').classList.contains('show'))return;if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')openLightbox(galleryIndex-1,galleryType,false);if(e.key==='ArrowRight')openLightbox(galleryIndex+1,galleryType,false)});bindLiveEditor();
     document.getElementById('contactForm').addEventListener('submit',e=>{e.preventDefault();const lead={name:document.getElementById('name').value,phone:document.getElementById('phone').value,email:document.getElementById('email').value,industry:document.getElementById('industry').value,need:document.getElementById('need').value,source:'form',createdAt:new Date().toISOString()};try{const leads=JSON.parse(localStorage.getItem('beeflow_leads')||'[]');leads.push(lead);localStorage.setItem('beeflow_leads',JSON.stringify(leads))}catch(err){}document.getElementById('success').style.display='block';e.target.reset()});
   </script>
 </body>
