@@ -68,7 +68,7 @@ const msgs=document.getElementById('msgs');
       setTimeout(askCurrent,180)}
     function handleConfirmation(answerText){if(chat.phase!=='confirm')return;if(answerText==='yes'||isYes(answerText)){commitPending();return}chat.phase='ask';const key=chat.pendingKey;chat.pendingValue='';if(key==='company'){if(!chat.data.industry){chat.needsName=true;chat.step=1;ai('Jasne. Żeby zaproponować dobrą nazwę, najpierw muszę wiedzieć dokładnie, czym zajmuje się firma.');setTimeout(askCurrent,180);return}chat.nameRound++;offerNameSuggestion(true);return}ai(`Jasne. Poprawmy ${fieldLabel(key)}. Napisz właściwą wersję, a najpierw ją potwierdzę.`)}
 
-    function nameTokens(industry=''){const x=industry.toLowerCase();if(/bram|ogrod|spaw|stal/.test(x))return ['StalForma','BramaLab','StalPoint','ForgeLine','SolidGate','MetalForma'];if(/detail|auto|samoch|lakier/.test(x))return ['DetailForge','AutoGlow','PrimeDetail','ShineLab','DetailPoint','AutoForma'];if(/budow|remont|wykoń/.test(x))return ['SolidDom','BuildForma','ProConstruct','DomPoint','FormaBud','BuildLab'];if(/fryz|beauty|kosmet|paznok/.test(x))return ['AuraStudio','PureLine','NovaBeauty','GlowRoom','FormaBeauty','LunaStudio'];if(/transport|przeprowad|kurier/.test(x))return ['MovePoint','CargoFlow','TransForma','RoutePro','FastLine','MoveLab'];const base=(industry||'Firma').replace(/[^\p{L}\p{N} ]/gu,' ').trim().split(/\s+/)[0]||'Firma';return [base+' Studio',base+' Pro',base+' Point',base+' Lab',base+' Works',base+' Prime']}
+    function nameTokens(industry=''){const x=industry.toLowerCase();if(/szklar|poliwęgl|poliwegl|greenhouse|tunel/.test(x))return ['GreenForma','Ogrody Pod Szkłem','PolyGarden','GreenHouse Pro','GardenFrame','VitaGlass'];if(/bram|ogrod|furt/.test(x))return ['StalForma','BramaLab','StalPoint','ForgeLine','SolidGate','MetalForma'];if(/detail|auto|samoch|lakier/.test(x))return ['DetailForge','AutoGlow','PrimeDetail','ShineLab','DetailPoint','AutoForma'];if(/budow|remont|wykoń/.test(x))return ['SolidDom','BuildForma','ProConstruct','DomPoint','FormaBud','BuildLab'];if(/fryz|beauty|kosmet|paznok/.test(x))return ['AuraStudio','PureLine','NovaBeauty','GlowRoom','FormaBeauty','LunaStudio'];if(/transport|przeprowad|kurier/.test(x))return ['MovePoint','CargoFlow','TransForma','RoutePro','FastLine','MoveLab'];const base=(industry||'Firma').replace(/[^\p{L}\p{N} ]/gu,' ').trim().split(/\s+/)[0]||'Firma';return [base+' Studio',base+' Pro',base+' Point',base+' Lab',base+' Works',base+' Prime']}
     function scoreName(name){let score=7;const len=name.replace(/\s/g,'').length;if(len>=6&&len<=12)score+=1;if(!/[0-9]/.test(name))score+=.5;if(name.split(/\s+/).length<=2)score+=.5;return Math.min(9.5,score).toFixed(1)}
     function nameReason(name){const parts=[];if(name.length<15)parts.push('krótka');if(name.split(/\s+/).length<=2)parts.push('łatwa do zapamiętania');parts.push('nadaje się do logo i domeny');return parts.join(', ')}
     function offerNameSuggestion(forceAlternative=false){chat.phase='naming';chat.needsName=true;const list=nameTokens(chat.data.industry);const idx=(chat.nameRound++)%list.length;let proposed=list[idx];if(proposed===chat.lastSuggestedName)proposed=list[(idx+1)%list.length];chat.lastSuggestedName=proposed;ai(`<div class="nameProposal"><span class="nameScore">Ocena marketingowa demo: ${scoreName(proposed)}/10</span><strong>${esc(proposed)}</strong><p>${esc(nameReason(proposed))}. To jest ocena heurystyczna BeeFlow — prawdziwe sprawdzenie konkurencji, domen i znaków towarowych dołączymy po podpięciu backendu.</p></div>`,true);setTimeout(()=>addChips(['Tak, ta nazwa pasuje','Pokaż inną nazwę','Wpiszę własną nazwę'],handleNameChoice),200)}
@@ -168,6 +168,11 @@ const msgs=document.getElementById('msgs');
     function siteCopy(d){
       const cat=categoryKey(d), n=hashString(`${d.company||''}|${d.city||''}|sections`)%3;
       const packs={
+        greenhouse:[
+          {servicesTitle:'Szklarnia dopasowana do Twojego ogrodu',servicesLead:'Konstrukcja, poliwęglan i sposób montażu dobrane do Twojej przestrzeni.',ctaTitle:'Masz miejsce na szklarnię?',ctaLead:'Podaj wymiary ogrodu i oczekiwany rozmiar. Dobierzemy rozwiązanie.',contactTitle:'Wyceń swoją szklarnię',contactLead:'Napisz, jakiej wielkości szklarni potrzebujesz i czy chcesz montaż.'},
+          {servicesTitle:'Od konstrukcji do gotowej szklarni',servicesLead:'Możemy wykonać całość albo przygotować zestaw do samodzielnego montażu.',ctaTitle:'Chcesz wydłużyć sezon w ogrodzie?',ctaLead:'Powiedz, ile masz miejsca i co chcesz uprawiać.',contactTitle:'Porozmawiajmy o szklarni',contactLead:'Kilka wymiarów i krótki opis wystarczą na start.'},
+          {servicesTitle:'Szklarnie z poliwęglanu bez zbędnych komplikacji',servicesLead:'Trwała konstrukcja, praktyczny układ i opcja montażu dopasowana do Ciebie.',ctaTitle:'Sprawdź, jaki wariant będzie pasował',ctaLead:'Napisz, jaki rozmiar i sposób montażu Cię interesuje.',contactTitle:'Poproś o wycenę',contactLead:'Zostaw kontakt i podstawowe wymiary.'}
+        ],
         gates:[
           {servicesTitle:'Co zrobimy dla Twojego wjazdu',servicesLead:'Pomiar, wykonanie i montaż — wszystko pod konkretną posesję.',ctaTitle:'Masz pomysł na bramę?',ctaLead:'Pokaż wjazd lub podaj wymiary. Powiemy, co ma sens.',contactTitle:'Wyceńmy Twoją bramę',contactLead:'Zostaw kontakt. Dopytamy tylko o rzeczy potrzebne do wyceny.'},
           {servicesTitle:'Od pomiaru do montażu',servicesLead:'Ty pokazujesz, czego potrzebujesz. My dobieramy wykonanie.',ctaTitle:'Zacznij od krótkiej rozmowy',ctaLead:'Bez zobowiązań. Najpierw ustalamy, co chcesz zrobić.',contactTitle:'Porozmawiajmy o wjeździe',contactLead:'Numer telefonu i krótki opis wystarczą na start.'},
@@ -210,7 +215,8 @@ const msgs=document.getElementById('msgs');
     function businessContext(d=chat.data){return [d.businessBrief,d.industry,d.services,d.usp].filter(Boolean).join(' ').toLowerCase()}
     function deriveIndustryLabel(text=''){
       const x=String(text).toLowerCase();
-      if(/bram|ogrodz|furt|spaw|stal/.test(x))return 'Bramy i ogrodzenia';
+      if(/szklar|poliwęgl|poliwegl|greenhouse|tunel ogrod/.test(x))return 'Szklarnie ogrodowe';
+      if(/bram|ogrodz|furt/.test(x))return 'Bramy i ogrodzenia';
       if(/detail|auto|samoch|lakier|ceram|poler/.test(x))return 'Detailing samochodowy';
       if(/budow|remont|wykoń|wykoncz|elewac|mur/.test(x))return 'Usługi budowlane';
       if(/fryz|beauty|kosmet|paznok|makija/.test(x))return 'Beauty';
@@ -249,7 +255,8 @@ const msgs=document.getElementById('msgs');
     }
     function categoryKey(d=chat.data){
       const x=businessContext(d);
-      if(/bram|ogrodz|furt|spaw|stal/.test(x))return 'gates';
+      if(/szklar|poliwęgl|poliwegl|greenhouse|tunel ogrod/.test(x))return 'greenhouse';
+      if(/bram|ogrodz|furt/.test(x))return 'gates';
       if(/detail|auto|samoch|lakier|ceram|poler/.test(x))return 'auto';
       if(/budow|remont|wykoń|wykoncz/.test(x))return 'build';
       if(/fryz|beauty|kosmet|paznok/.test(x))return 'beauty';
@@ -261,6 +268,7 @@ const msgs=document.getElementById('msgs');
     function heroTitle(d){
       if((d.headline||'').trim())return d.headline.trim();
       const cat=categoryKey(d), variants={
+        greenhouse:['Szklarnia dopasowana do Twojego ogrodu.','Więcej sezonu. Więcej zbiorów.','Solidna konstrukcja. Jasny montaż.','Twoja szklarnia — gotowa na kolejne sezony.'],
         gates:['Brama na wymiar. Bez kompromisów.','Od pomiaru do gotowej bramy.','Twój wjazd. Nasza stal. Gotowy efekt.','Bramy, które naprawdę pasują do posesji.'],
         auto:['Auto, które znów robi wrażenie.','Efekt widać od pierwszego spojrzenia.','Czysto. Głęboko. Zabezpieczone.'],
         build:['Konkretny zakres. Porządne wykonanie.','Od planu do gotowego efektu.','Remont bez chaosu i niedomówień.'],
@@ -272,6 +280,7 @@ const msgs=document.getElementById('msgs');
     }
     function heroLead(d){
       const cat=categoryKey(d), area=areaCopy(d), f=businessFeatures(d);
+      if(cat==='greenhouse')return `Szklarnie z poliwęglanu przygotowane pod konkretny ogród i sposób użytkowania. ${area}.`;
       if(cat==='gates'){
         if(f.includes('Własna produkcja'))return `Mierzymy, projektujemy i wykonujemy u siebie. ${area}.`;
         return `Pomiar, wykonanie i montaż pod konkretny wjazd. ${area}.`;
@@ -284,7 +293,11 @@ const msgs=document.getElementById('msgs');
     }
     function serviceDesc(name,industry=''){
       const n=String(name).toLowerCase(), ctx=(n+' '+String(industry).toLowerCase());
-      if(/spawan|spaw/.test(n))return 'Spawamy konstrukcję pod wymiar — solidnie i pod konkretny wjazd.';
+      if(/szklar|poliwęgl|poliwegl/.test(n))return 'Przygotowujemy konstrukcję i poszycie tak, żeby szklarnia była trwała, praktyczna i łatwa w użytkowaniu.';
+      if(/konserw/.test(n)&&/szklar|poliwęgl|poliwegl/.test(ctx))return 'Sprawdzamy konstrukcję, łączenia i poszycie, żeby szklarnia była gotowa na kolejny sezon.';
+      if(/samodziel|skręc|skrec/.test(n))return 'Przygotowujemy komplet elementów do samodzielnego montażu z czytelnym podziałem i dopasowaniem części.';
+      if(/spawan|spaw/.test(n)&&/szklar|poliwęgl|poliwegl/.test(ctx))return 'Spawamy konstrukcję szklarni pod wymiar, tak żeby całość była sztywna i dobrze dopasowana do wybranego formatu.';
+      if(/spawan|spaw/.test(n))return 'Spawamy konstrukcję pod ustalony wymiar i sposób użytkowania.';
       if(/bram.*przesuw|przesuw.*bram/.test(ctx))return 'Dobieramy skrzydło, przeciwwagę i prowadzenie dokładnie do Twojego wjazdu.';
       if(/bram/.test(n))return 'Projektujemy i wykonujemy bramę tak, żeby dobrze wyglądała i wygodnie działała.';
       if(/ogrodz/.test(n))return 'Dopasowujemy ogrodzenie do posesji, bramy i oczekiwanego poziomu prywatności.';
@@ -303,6 +316,7 @@ const msgs=document.getElementById('msgs');
     }
     function aboutCopy(d){
       const cat=categoryKey(d), f=businessFeatures(d), area=areaCopy(d), name=d.company||'Nasza firma';
+      if(cat==='greenhouse')return `${name} wykonuje szklarnie ogrodowe z poliwęglanu — od przygotowania konstrukcji po gotowy zestaw lub montaż. ${area}.`;
       if(cat==='gates'){
         const own=f.includes('Własna produkcja')?' Własna produkcja daje nam kontrolę nad każdym etapem.':'';
         return `${name} tworzy bramy i ogrodzenia na wymiar — od pomiaru po montaż.${own} ${area}.`;
@@ -314,12 +328,14 @@ const msgs=document.getElementById('msgs');
     }
     function trustItems(d){
       const cat=categoryKey(d), f=businessFeatures(d), area=areaCopy(d);
+      if(cat==='greenhouse')return [['Dopasowanie do ogrodu','Rozmiar i konstrukcja pod konkretną przestrzeń'],['Poliwęglan i konstrukcja','Materiały dobrane do codziennego użytkowania'],['Elastyczny montaż','Montaż przez nas lub przygotowanie zestawu do samodzielnego skręcenia']];
       if(cat==='gates')return [[f.includes('Pomiar i wykonanie pod wymiar')?'Pod wymiar':'Dopasowanie','Nie z katalogu — pod konkretny wjazd'],[f.includes('Własna produkcja')?'Własna produkcja':'Pewny proces','Kontrola od stali do montażu'],['Lokalnie',area]];
       if(cat==='auto')return [['Dobór zakresu','Tylko to, czego auto naprawdę potrzebuje'],['Detal','Efekt widać z bliska'],['Termin','Szybkie i jasne ustalenie']];
       return [['Jasny zakres','Wiesz, za co płacisz'],['Dobry kontakt','Bez gonienia za odpowiedzią'],['Lokalnie',area]]
     }
     function whyCards(d){
       const f=businessFeatures(d), cat=categoryKey(d), cards=[];
+      if(cat==='greenhouse')return [['Dopasowana konstrukcja','Rozmiar i układ dobieramy do konkretnego ogrodu.'],['Poliwęglan','Lekka i praktyczna osłona do wydłużenia sezonu.'],['Opcja samodzielnego montażu','Możemy przygotować komplet elementów do skręcenia przez klienta.'],['Wsparcie po zakupie','Pomagamy również przy konserwacji i dalszej eksploatacji.']];
       if(f.includes('Własna produkcja'))cards.push(['Własna produkcja','Kontrolujemy wykonanie od pierwszego cięcia.']);
       if(f.includes('Pomiar i wykonanie pod wymiar'))cards.push(['Pomiar na miejscu','Mierzymy przed produkcją, żeby wszystko pasowało.']);
       if(f.includes('Projekt dopasowany do pomysłu klienta'))cards.push(['Projekt pod klienta','Twój pomysł dopasowujemy do realnych warunków.']);
