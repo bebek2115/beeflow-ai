@@ -1,3 +1,4 @@
+// BeeFlow v11.2 chat hotfix — childcare + cache-safe deploy
 const msgs=document.getElementById('msgs');
     const form=document.getElementById('chatForm');
     const inp=document.getElementById('chatInput');
@@ -68,7 +69,7 @@ const msgs=document.getElementById('msgs');
       setTimeout(askCurrent,180)}
     function handleConfirmation(answerText){if(chat.phase!=='confirm')return;if(answerText==='yes'||isYes(answerText)){commitPending();return}chat.phase='ask';const key=chat.pendingKey;chat.pendingValue='';if(key==='company'){if(!chat.data.industry){chat.needsName=true;chat.step=1;ai('Jasne. Żeby zaproponować dobrą nazwę, najpierw muszę wiedzieć dokładnie, czym zajmuje się firma.');setTimeout(askCurrent,180);return}chat.nameRound++;offerNameSuggestion(true);return}ai(`Jasne. Poprawmy ${fieldLabel(key)}. Napisz właściwą wersję, a najpierw ją potwierdzę.`)}
 
-    function nameTokens(industry=''){const x=industry.toLowerCase();if(/import|sprowadz|sprzedaż samoch|sprzedaz samoch|handel aut|komis/.test(x))return ['AutoSelect','MotoSource','CarBridge','AutoPort','DriveSelect','MotoPrime'];if(/szklar|poliwęgl|poliwegl|greenhouse|tunel/.test(x))return ['GreenForma','Ogrody Pod Szkłem','PolyGarden','GreenHouse Pro','GardenFrame','VitaGlass'];if(/bram|ogrod|furt/.test(x))return ['StalForma','BramaLab','StalPoint','ForgeLine','SolidGate','MetalForma'];if(/detail|lakier|ceram|poler|auto detail/.test(x))return ['DetailForge','AutoGlow','PrimeDetail','ShineLab','DetailPoint','AutoForma'];if(/stomatolog|dentyst|gabinet stomat|higieniz|leczenie kanał|kanalow/.test(x))return ['DentaNova','SmilePoint','NovaDent','DentCare','DentAura','WhiteDent'];if(/budowl|remont|wykończ|wykoncz|elewac|murarsk/.test(x))return ['SolidDom','BuildForma','ProConstruct','DomPoint','FormaBud','BuildLab'];if(/fryz|beauty|kosmet|paznok|manicure|brwi|rzęs|rzes/.test(x))return ['AuraStudio','PureLine','NovaBeauty','GlowRoom','FormaBeauty','LunaStudio'];if(/transport|przeprowad|kurier/.test(x))return ['MovePoint','CargoFlow','TransForma','RoutePro','FastLine','MoveLab'];return ['Nexa','VeroPoint','NovaForma','Primeo','Noviq','FormaOne']}
+    function nameTokens(industry=''){const x=industry.toLowerCase();if(/import|sprowadz|sprzedaż samoch|sprzedaz samoch|handel aut|komis/.test(x))return ['AutoSelect','MotoSource','CarBridge','AutoPort','DriveSelect','MotoPrime'];if(/szklar|poliwęgl|poliwegl|greenhouse|tunel/.test(x))return ['GreenForma','Ogrody Pod Szkłem','PolyGarden','GreenHouse Pro','GardenFrame','VitaGlass'];if(/bram|ogrod|furt/.test(x))return ['StalForma','BramaLab','StalPoint','ForgeLine','SolidGate','MetalForma'];if(/detail|lakier|ceram|poler|auto detail/.test(x))return ['DetailForge','AutoGlow','PrimeDetail','ShineLab','DetailPoint','AutoForma'];if(/stomatolog|dentyst|gabinet stomat|higieniz|leczenie kanał|kanalow/.test(x))return ['DentaNova','SmilePoint','NovaDent','DentCare','DentAura','WhiteDent'];if(/budowl|remont|wykończ|wykoncz|elewac|murarsk/.test(x))return ['SolidDom','BuildForma','ProConstruct','DomPoint','FormaBud','BuildLab'];if(/fryz|beauty|kosmet|paznok|manicure|brwi|rzęs|rzes/.test(x))return ['AuraStudio','PureLine','NovaBeauty','GlowRoom','FormaBeauty','LunaStudio'];if(/opieka nad dzie|opiekuj|dziec|nian|żłob|zlob|przedszkol|klub malucha|babysit/.test(x))return ['MaliRazem','TuliMiejsce','DobryStart','BliskoDziecka','MaliOdkrywcy','TęczowyKącik'];if(/transport|przeprowad|kurier/.test(x))return ['MovePoint','CargoFlow','TransForma','RoutePro','FastLine','MoveLab'];return ['Nexa','VeroPoint','NovaForma','Primeo','Noviq','FormaOne']}
     function scoreName(name){let score=7;const len=name.replace(/\s/g,'').length;if(len>=6&&len<=12)score+=1;if(!/[0-9]/.test(name))score+=.5;if(name.split(/\s+/).length<=2)score+=.5;return Math.min(9.5,score).toFixed(1)}
     function nameReason(name){const parts=[];if(name.length<15)parts.push('krótka');if(name.split(/\s+/).length<=2)parts.push('łatwa do zapamiętania');parts.push('nadaje się do logo i domeny');return parts.join(', ')}
     function offerNameSuggestion(forceAlternative=false){chat.phase='naming';chat.needsName=true;const list=nameTokens(chat.data.industry);const idx=(chat.nameRound++)%list.length;let proposed=list[idx];if(proposed===chat.lastSuggestedName)proposed=list[(idx+1)%list.length];chat.lastSuggestedName=proposed;ai(`<div class="nameProposal"><span class="nameScore">Ocena marketingowa demo: ${scoreName(proposed)}/10</span><strong>${esc(proposed)}</strong><p>${esc(nameReason(proposed))}. To jest ocena heurystyczna BeeFlow — prawdziwe sprawdzenie konkurencji, domen i znaków towarowych dołączymy po podpięciu backendu.</p></div>`,true);setTimeout(()=>addChips(['Tak, ta nazwa pasuje','Pokaż inną nazwę','Wpiszę własną nazwę'],handleNameChoice),200)}
@@ -236,6 +237,7 @@ const msgs=document.getElementById('msgs');
     function businessContext(d=chat.data){return [d.businessBrief,d.industry,d.services,d.usp].filter(Boolean).join(' ').toLowerCase()}
     function deriveIndustryLabel(text=''){
       const raw=String(text).trim(), x=raw.toLowerCase();
+      if(/opieka nad dzie|opiekuj\w*.*dziec|dziec.*opieka|nian|żłob|zlob|przedszkol|klub malucha|babysit/.test(x))return 'Opieka nad dziećmi';
       if(/sprowadz|import(ujemy|uję|uje)? .*?(aut|samoch)|samochod.*z zagran|auta.*z zagran|handel.*(aut|samoch)|sprzedaż.*(aut|samoch)|sprzedaz.*(aut|samoch)|komis samoch/.test(x))return 'Import i sprzedaż samochodów';
       if(/szklar|poliwęgl|poliwegl|greenhouse|tunel ogrod/.test(x))return 'Szklarnie ogrodowe';
       if(/bram|ogrodz|furt/.test(x))return 'Bramy i ogrodzenia';
@@ -283,6 +285,7 @@ const msgs=document.getElementById('msgs');
     }
     function categoryKey(d=chat.data){
       const x=businessContext(d);
+      if(/opieka nad dzie|opiekuj\w*.*dziec|dziec.*opieka|nian|żłob|zlob|przedszkol|klub malucha|babysit/.test(x))return 'childcare';
       if(/import|sprowadz|sprzedaż samoch|sprzedaz samoch|handel aut|komis samoch|samochod.*z zagran/.test(x))return 'cartrade';
       if(/szklar|poliwęgl|poliwegl|greenhouse|tunel ogrod/.test(x))return 'greenhouse';
       if(/bram|ogrodz|furt/.test(x))return 'gates';
@@ -306,6 +309,7 @@ const msgs=document.getElementById('msgs');
         build:['Konkretny zakres. Porządne wykonanie.','Od planu do gotowego efektu.','Remont bez chaosu i niedomówień.'],
         beauty:['Efekt, po który chce się wracać.','Twój czas. Twój efekt.','Profesjonalnie, ale bez sztywnej atmosfery.'],
         transport:['Dowozimy. Na czas. Bez komplikacji.','Transport, który po prostu działa.','Trasa ustalona. Ładunek zabezpieczony. Termin dotrzymany.'],
+        childcare:['Dobra opieka, kiedy Ty jesteś w pracy.','Bezpieczna opieka. Spokojniejszy dzień rodzica.','Miejsce, w którym dzieci czują się swobodnie.'],
         general:[`${d.company||'Twoja firma'}. Konkret zamiast obietnic.`,`${d.company||'Twoja firma'} — dobry efekt zaczyna się od dobrych ustaleń.`,`Usługa dopasowana do Ciebie, nie odwrotnie.`]
       };
       return pickCopy(d,variants[cat]||variants.general,'hero')
@@ -323,10 +327,12 @@ const msgs=document.getElementById('msgs');
       if(cat==='build')return `Najpierw zakres i wycena. Potem sprawna realizacja bez zgadywania. ${area}.`;
       if(cat==='transport')return `Podajesz trasę i ładunek. My ustalamy termin i konkretną cenę. ${area}.`;
       if(cat==='beauty')return `Wybierasz efekt. My dobieramy usługę i dogodny termin. ${area}.`;
+      if(cat==='childcare')return `Zapewniamy dzieciom bezpieczną, uważną opiekę w czasie, gdy rodzice są w pracy lub mają inne obowiązki. ${area}.`;
       return `Krótka rozmowa, jasny zakres i konkretny kolejny krok. ${area}.`
     }
     function serviceDesc(name,industry=''){
       const n=String(name).toLowerCase(), ctx=(n+' '+String(industry).toLowerCase());
+      if(/opieka|dziec|nian|żłob|zlob|przedszkol|zabawy|zajęcia|zajecia/.test(n)&&/opieka nad dzie|dziec|nian|żłob|zlob|przedszkol|klub malucha/.test(ctx))return 'Zapewniamy dzieciom uważną opiekę, bezpieczne warunki i zajęcia dopasowane do wieku oraz rytmu dnia.';
       if(/sprowadz|import/.test(n))return 'Szukamy i sprowadzamy samochód zgodnie z ustalonym budżetem, wymaganiami i kierunkiem zakupu.';
       if(/sprzedaż|sprzedaz|dobór auta|dobor auta|wyszukiwanie auta/.test(n)&&/samoch|aut/.test(ctx))return 'Pomagamy dobrać samochód do potrzeb i jasno przejść przez kolejne etapy zakupu.';
       if(/weryfik|sprawdzen/.test(n)&&/samoch|aut/.test(ctx))return 'Sprawdzamy najważniejsze informacje o aucie przed decyzją, żeby ograniczyć ryzyko nietrafionego zakupu.';
@@ -371,6 +377,7 @@ const msgs=document.getElementById('msgs');
       if(cat==='auto')return `${name} dba o wygląd i zabezpieczenie aut. Dobieramy zakres do stanu samochodu, a nie do gotowego pakietu. ${area}.`;
       if(cat==='dental')return `${name} zapewnia opiekę stomatologiczną z naciskiem na spokojną atmosferę, zrozumiałe wyjaśnienie leczenia i indywidualne podejście do pacjenta. ${area}.`;
       if(cat==='beauty')return `${name} to miejsce, w którym liczy się estetyka, higiena i efekt dopasowany do Ciebie. Każdą wizytę zaczynamy od krótkiego ustalenia oczekiwań. ${area}.`;
+      if(cat==='childcare')return `${name} zapewnia opiekę nad dziećmi w czasie, gdy rodzice są w pracy lub mają inne obowiązki. Stawiamy na bezpieczeństwo, dobrą komunikację z rodzicem i spokojną atmosferę dla dziecka. ${area}.`;
       if(cat==='build')return `${name} realizuje prace według ustalonego zakresu. Bez niedomówień, z jasnym kontaktem na każdym etapie. ${area}.`;
       if(cat==='transport')return `${name} organizuje przewóz sprawnie i konkretnie — trasa, termin i warunki są jasne od początku. ${area}.`;
       return `${name} stawia na jasne ustalenia, dobry kontakt i rozwiązania dopasowane do konkretnego zlecenia. ${area}.`
@@ -383,6 +390,7 @@ const msgs=document.getElementById('msgs');
       if(cat==='auto')return [['Dobór zakresu','Tylko to, czego auto naprawdę potrzebuje'],['Detal','Efekt widać z bliska'],['Termin','Szybkie i jasne ustalenie']];
       if(cat==='dental')return [['Spokojne podejście','Jasno tłumaczymy kolejne etapy'],['Plan leczenia','Wiesz, jakie są możliwości i co robimy dalej'],['Lokalnie',area]];
       if(cat==='beauty')return [['Higiena','Czyste stanowisko i bezpieczne narzędzia'],['Dobór efektu','Stylizacja dopasowana do Ciebie'],['Wizyta','Jasne ustalenie usługi i terminu']];
+      if(cat==='childcare')return [['Bezpieczeństwo','Opieka dopasowana do wieku i potrzeb dziecka'],['Kontakt z rodzicem','Jasne ustalenia dotyczące dnia i opieki'],['Spokojna atmosfera','Miejsce, w którym dziecko może czuć się swobodnie']];
       return [['Jasny zakres','Wiesz, co obejmuje usługa'],['Dobry kontakt','Bez gonienia za odpowiedzią'],['Lokalnie',area]]
     }
     function whyCards(d){
@@ -391,6 +399,7 @@ const msgs=document.getElementById('msgs');
       if(cat==='dental')return [['Spokojna wizyta','Dbamy o komfort i jasną komunikację od pierwszego kontaktu.'],['Zrozumiały plan','Wyjaśniamy możliwe rozwiązania i kolejne kroki leczenia.'],['Nowoczesne podejście','Diagnostykę i leczenie dobieramy do konkretnej sytuacji.'],['Profilaktyka','Pomagamy dbać o zdrowie jamy ustnej również między wizytami.']];
       if(cat==='beauty')return [['Indywidualny efekt','Najpierw ustalamy, jaki rezultat chcesz uzyskać.'],['Higiena','Dbamy o czystość stanowiska i bezpieczne przygotowanie narzędzi.'],['Spokojna atmosfera','Wizyta ma być przyjemna, nie pośpieszna.'],['Estetyka','Liczy się dopracowany efekt, który pasuje do Ciebie.']];
       if(cat==='greenhouse')return [['Dopasowana konstrukcja','Rozmiar i układ dobieramy do konkretnego ogrodu.'],['Poliwęglan','Lekka i praktyczna osłona do wydłużenia sezonu.'],['Opcja samodzielnego montażu','Możemy przygotować komplet elementów do skręcenia przez klienta.'],['Wsparcie po zakupie','Pomagamy również przy konserwacji i dalszej eksploatacji.']];
+      if(cat==='childcare')return [['Bezpieczna opieka','Najważniejsze jest dobre samopoczucie i bezpieczeństwo dziecka.'],['Kontakt z rodzicem','Ustalamy najważniejsze informacje i pozostajemy w kontakcie.'],['Aktywności dla dzieci','Organizujemy czas odpowiednio do wieku i potrzeb.'],['Elastyczne ustalenia','Zakres i godziny opieki ustalamy przed rozpoczęciem.']];
       if(f.includes('Własna produkcja'))cards.push(['Własna produkcja','Kontrolujemy wykonanie od pierwszego cięcia.']);
       if(f.includes('Pomiar i wykonanie pod wymiar'))cards.push(['Pomiar na miejscu','Mierzymy przed produkcją, żeby wszystko pasowało.']);
       if(f.includes('Projekt dopasowany do pomysłu klienta'))cards.push(['Projekt pod klienta','Twój pomysł dopasowujemy do realnych warunków.']);
@@ -428,11 +437,11 @@ const msgs=document.getElementById('msgs');
       for(const [needle,key] of map){if((x.includes('zmień')||x.includes('zmien')||x.includes('popraw'))&&x.includes(needle)){chat.phase='ask';chat.pendingKey=key;chat.step=Math.max(0,questions.findIndex(q=>q.key===key));ai(`Okej — wracamy do pola „${fieldLabel(key)}”. Podaj nową wersję.`);return true}}return false
     }
 
-    function actionLabel(d){const cat=categoryKey(d);if(cat==='dental'||cat==='beauty')return 'Umów wizytę';if(cat==='auto')return 'Zapytaj o termin';if(cat==='transport')return 'Sprawdź termin i cenę';return 'Poproś o wycenę'}
-    function formTitleCopy(d){const cat=categoryKey(d);if(cat==='dental')return 'Umów wizytę lub konsultację';if(cat==='beauty')return 'Umów wizytę';if(cat==='auto')return 'Zapytaj o termin i zakres';return 'Poproś o bezpłatną wycenę'}
-    function formIntroCopy(d){const cat=categoryKey(d);if(cat==='dental')return 'Zostaw kontakt i krótko napisz, z czym się zgłaszasz.';if(cat==='beauty')return 'Zostaw kontakt i napisz, jaka usługa Cię interesuje.';return 'Zostaw kontakt i krótko opisz, czego potrzebujesz.'}
-    function messageLabelCopy(d){const cat=categoryKey(d);if(cat==='dental')return 'Z czym się zgłaszasz?';if(cat==='beauty')return 'Jaki efekt lub usługę wybierasz?';return 'Krótki opis zlecenia'}
-    function highlightClaim(d){const cat=categoryKey(d),f=businessFeatures(d);if(cat==='dental')return 'Spokojne podejście i jasny plan leczenia';if(cat==='beauty')return 'Higiena, estetyka i efekt dopasowany do Ciebie';return f[0]||cleanUsp(d.usp)||'Dobra realizacja zaczyna się od dobrych ustaleń.'}
+    function actionLabel(d){const cat=categoryKey(d);if(cat==='dental'||cat==='beauty')return 'Umów wizytę';if(cat==='childcare')return 'Zapytaj o miejsce';if(cat==='auto')return 'Zapytaj o termin';if(cat==='transport')return 'Sprawdź termin i cenę';return 'Poproś o wycenę'}
+    function formTitleCopy(d){const cat=categoryKey(d);if(cat==='dental')return 'Umów wizytę lub konsultację';if(cat==='beauty')return 'Umów wizytę';if(cat==='childcare')return 'Zapytaj o opiekę i dostępność';if(cat==='auto')return 'Zapytaj o termin i zakres';return 'Poproś o bezpłatną wycenę'}
+    function formIntroCopy(d){const cat=categoryKey(d);if(cat==='dental')return 'Zostaw kontakt i krótko napisz, z czym się zgłaszasz.';if(cat==='beauty')return 'Zostaw kontakt i napisz, jaka usługa Cię interesuje.';if(cat==='childcare')return 'Zostaw kontakt i napisz, w jakich dniach lub godzinach potrzebujesz opieki.';return 'Zostaw kontakt i krótko opisz, czego potrzebujesz.'}
+    function messageLabelCopy(d){const cat=categoryKey(d);if(cat==='dental')return 'Z czym się zgłaszasz?';if(cat==='beauty')return 'Jaki efekt lub usługę wybierasz?';if(cat==='childcare')return 'Jakiej opieki potrzebujesz?';return 'Krótki opis zlecenia'}
+    function highlightClaim(d){const cat=categoryKey(d),f=businessFeatures(d);if(cat==='dental')return 'Spokojne podejście i jasny plan leczenia';if(cat==='beauty')return 'Higiena, estetyka i efekt dopasowany do Ciebie';if(cat==='childcare')return 'Bezpieczna opieka i dobry kontakt z rodzicem';return f[0]||cleanUsp(d.usp)||'Dobra realizacja zaczyna się od dobrych ustaleń.'}
 
     function renderDemo(save=false){
       const d=chat.data;const copy=siteCopy(d);const services=normalizeServices(d.services||'Profesjonalna obsługa, Indywidualna wycena, Szybka realizacja');const heroPhoto=d.photos[0]||d.projectPhotos[0]||'';const email=/pomiń/i.test(d.email||'')?'':d.email;const cls=themeClass(d.style);const layout=layoutClass(d);const domains=domainIdeas(d);const trust=trustItems(d);const why=whyCards(d);const extras=d.extras||[];
