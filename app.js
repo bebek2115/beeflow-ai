@@ -68,7 +68,7 @@ const msgs=document.getElementById('msgs');
       setTimeout(askCurrent,180)}
     function handleConfirmation(answerText){if(chat.phase!=='confirm')return;if(answerText==='yes'||isYes(answerText)){commitPending();return}chat.phase='ask';const key=chat.pendingKey;chat.pendingValue='';if(key==='company'){if(!chat.data.industry){chat.needsName=true;chat.step=1;ai('Jasne. Żeby zaproponować dobrą nazwę, najpierw muszę wiedzieć dokładnie, czym zajmuje się firma.');setTimeout(askCurrent,180);return}chat.nameRound++;offerNameSuggestion(true);return}ai(`Jasne. Poprawmy ${fieldLabel(key)}. Napisz właściwą wersję, a najpierw ją potwierdzę.`)}
 
-    function nameTokens(industry=''){const x=industry.toLowerCase();if(/szklar|poliwęgl|poliwegl|greenhouse|tunel/.test(x))return ['GreenForma','Ogrody Pod Szkłem','PolyGarden','GreenHouse Pro','GardenFrame','VitaGlass'];if(/bram|ogrod|furt/.test(x))return ['StalForma','BramaLab','StalPoint','ForgeLine','SolidGate','MetalForma'];if(/detail|auto|samoch|lakier/.test(x))return ['DetailForge','AutoGlow','PrimeDetail','ShineLab','DetailPoint','AutoForma'];if(/budow|remont|wykoń/.test(x))return ['SolidDom','BuildForma','ProConstruct','DomPoint','FormaBud','BuildLab'];if(/fryz|beauty|kosmet|paznok/.test(x))return ['AuraStudio','PureLine','NovaBeauty','GlowRoom','FormaBeauty','LunaStudio'];if(/transport|przeprowad|kurier/.test(x))return ['MovePoint','CargoFlow','TransForma','RoutePro','FastLine','MoveLab'];const base=(industry||'Firma').replace(/[^\p{L}\p{N} ]/gu,' ').trim().split(/\s+/)[0]||'Firma';return [base+' Studio',base+' Pro',base+' Point',base+' Lab',base+' Works',base+' Prime']}
+    function nameTokens(industry=''){const x=industry.toLowerCase();if(/szklar|poliwęgl|poliwegl|greenhouse|tunel/.test(x))return ['GreenForma','Ogrody Pod Szkłem','PolyGarden','GreenHouse Pro','GardenFrame','VitaGlass'];if(/bram|ogrod|furt/.test(x))return ['StalForma','BramaLab','StalPoint','ForgeLine','SolidGate','MetalForma'];if(/detail|auto|samoch|lakier/.test(x))return ['DetailForge','AutoGlow','PrimeDetail','ShineLab','DetailPoint','AutoForma'];if(/stomatolog|dentyst|gabinet stomat|higieniz|leczenie kanał|kanalow/.test(x))return ['DentaNova','SmilePoint','NovaDent','DentCare','DentAura','WhiteDent'];if(/budowl|remont|wykończ|wykoncz|elewac|murarsk/.test(x))return ['SolidDom','BuildForma','ProConstruct','DomPoint','FormaBud','BuildLab'];if(/fryz|beauty|kosmet|paznok|manicure|brwi|rzęs|rzes/.test(x))return ['AuraStudio','PureLine','NovaBeauty','GlowRoom','FormaBeauty','LunaStudio'];if(/transport|przeprowad|kurier/.test(x))return ['MovePoint','CargoFlow','TransForma','RoutePro','FastLine','MoveLab'];const base=(industry||'Firma').replace(/[^\p{L}\p{N} ]/gu,' ').trim().split(/\s+/)[0]||'Firma';return [base+' Studio',base+' Pro',base+' Point',base+' Lab',base+' Works',base+' Prime']}
     function scoreName(name){let score=7;const len=name.replace(/\s/g,'').length;if(len>=6&&len<=12)score+=1;if(!/[0-9]/.test(name))score+=.5;if(name.split(/\s+/).length<=2)score+=.5;return Math.min(9.5,score).toFixed(1)}
     function nameReason(name){const parts=[];if(name.length<15)parts.push('krótka');if(name.split(/\s+/).length<=2)parts.push('łatwa do zapamiętania');parts.push('nadaje się do logo i domeny');return parts.join(', ')}
     function offerNameSuggestion(forceAlternative=false){chat.phase='naming';chat.needsName=true;const list=nameTokens(chat.data.industry);const idx=(chat.nameRound++)%list.length;let proposed=list[idx];if(proposed===chat.lastSuggestedName)proposed=list[(idx+1)%list.length];chat.lastSuggestedName=proposed;ai(`<div class="nameProposal"><span class="nameScore">Ocena marketingowa demo: ${scoreName(proposed)}/10</span><strong>${esc(proposed)}</strong><p>${esc(nameReason(proposed))}. To jest ocena heurystyczna BeeFlow — prawdziwe sprawdzenie konkurencji, domen i znaków towarowych dołączymy po podpięciu backendu.</p></div>`,true);setTimeout(()=>addChips(['Tak, ta nazwa pasuje','Pokaż inną nazwę','Wpiszę własną nazwę'],handleNameChoice),200)}
@@ -80,7 +80,7 @@ const msgs=document.getElementById('msgs');
 
     function submitMessage(text){const t=(text??inp.value).trim();if(!t)return;bubble(t,'user');inp.value='';if(detectGlobalCorrection(t))return;
       if(chat.phase==='confirm'){if(isYes(t)){handleConfirmation('yes');return}if(isNo(t)){handleConfirmation('no');return}chat.pendingValue=sanitizeValue(chat.pendingKey,t);confirmValue(chat.pendingKey,chat.pendingValue);return}
-      if(chat.phase==='naming'){if(/inna|inny|kolejn/.test(t.toLowerCase())){offerNameSuggestion(true);return}if(isYes(t)){confirmValue('company',chat.lastSuggestedName);return}confirmValue('company',t);return}
+      if(chat.phase==='naming'){if(/inna|inny|kolejn|bardziej|coś|cos|propozycj|jeszcze/.test(t.toLowerCase())){offerNameSuggestion(true);return}if(isYes(t)){confirmValue('company',chat.lastSuggestedName);return}confirmValue('company',t);return}
       if(chat.phase==='naming-custom'){confirmValue('company',t);return}
       if(chat.phase==='extras'){handleExtraAnswer(t);return}
       handleAskAnswer(t)}
@@ -183,6 +183,11 @@ const msgs=document.getElementById('msgs');
           {servicesTitle:'Co możemy zrobić dla Twojego auta',servicesLead:'Krótko, konkretnie i bez wciskania zbędnych usług.',ctaTitle:'Sprawdź, czego potrzebuje Twoje auto',ctaLead:'Wyślij podstawowe informacje.',contactTitle:'Umówmy zakres i termin',contactLead:'Zostaw kontakt — wrócimy z propozycją.'},
           {servicesTitle:'Detailing dopasowany do auta',servicesLead:'Zakres wynika ze stanu auta, nie z gotowego cennika.',ctaTitle:'Masz konkretny efekt na oku?',ctaLead:'Powiedz jaki. Dobierzemy drogę do niego.',contactTitle:'Porozmawiajmy o aucie',contactLead:'Model, usługa i kontakt — tyle wystarczy.'}
         ],
+        dental:[
+          {servicesTitle:'Zadbaj o zdrowy uśmiech',servicesLead:'Profilaktyka, leczenie i higienizacja w spokojnej, zrozumiałej formule.',ctaTitle:'Chcesz umówić wizytę?',ctaLead:'Napisz, czego potrzebujesz — pomożemy wybrać odpowiedni termin.',contactTitle:'Umów wizytę',contactLead:'Zostaw kontakt i krótko napisz, z czym się zgłaszasz.'},
+          {servicesTitle:'Stomatologia bez zbędnego stresu',servicesLead:'Najpierw diagnoza i rozmowa. Potem jasny plan dalszego działania.',ctaTitle:'Masz pytanie o leczenie?',ctaLead:'Opisz krótko sytuację lub umów konsultację.',contactTitle:'Skontaktuj się z gabinetem',contactLead:'Zostaw numer telefonu lub e-mail.'},
+          {servicesTitle:'Od profilaktyki po leczenie',servicesLead:'Dobieramy rozwiązanie do stanu zdrowia i potrzeb pacjenta.',ctaTitle:'Zrób pierwszy krok do zdrowego uśmiechu',ctaLead:'Umów konsultację i poznaj możliwe rozwiązania.',contactTitle:'Zarezerwuj kontakt',contactLead:'Kilka informacji wystarczy, żeby zacząć.'}
+        ],
         build:[
           {servicesTitle:'Zakres prac bez niedomówień',servicesLead:'Wiesz, co robimy, zanim zaczniemy.',ctaTitle:'Masz pracę do wyceny?',ctaLead:'Opisz zakres. Resztę doprecyzujemy.',contactTitle:'Omówmy realizację',contactLead:'Zostaw kontakt i krótki opis.'},
           {servicesTitle:'Od planu do gotowego efektu',servicesLead:'Konkretny zakres i jasny kolejny krok.',ctaTitle:'Zacznijmy od zakresu',ctaLead:'Powiedz, co chcesz zrobić.',contactTitle:'Poproś o wycenę',contactLead:'Krótki opis wystarczy na start.'},
@@ -218,8 +223,9 @@ const msgs=document.getElementById('msgs');
       if(/szklar|poliwęgl|poliwegl|greenhouse|tunel ogrod/.test(x))return 'Szklarnie ogrodowe';
       if(/bram|ogrodz|furt/.test(x))return 'Bramy i ogrodzenia';
       if(/detail|auto|samoch|lakier|ceram|poler/.test(x))return 'Detailing samochodowy';
-      if(/budow|remont|wykoń|wykoncz|elewac|mur/.test(x))return 'Usługi budowlane';
-      if(/fryz|beauty|kosmet|paznok|makija/.test(x))return 'Beauty';
+      if(/stomatolog|dentyst|gabinet stomat|higieniz|leczenie kanał|kanalow|wybielanie zęb|wybielanie zeb/.test(x))return 'Stomatologia';
+      if(/budowl|remont|wykończ|wykoncz|elewac|murarsk/.test(x))return 'Usługi budowlane';
+      if(/fryz|beauty|kosmet|paznok|manicure|brwi|rzęs|rzes|makija/.test(x))return 'Beauty';
       if(/transport|przeprowad|kurier|dostaw/.test(x))return 'Transport';
       if(/hydraul|instalac|wod-kan|ogrzew/.test(x))return 'Hydraulika i instalacje';
       if(/elektryk|elektrycz|instalacja elek/.test(x))return 'Usługi elektryczne';
@@ -258,8 +264,9 @@ const msgs=document.getElementById('msgs');
       if(/szklar|poliwęgl|poliwegl|greenhouse|tunel ogrod/.test(x))return 'greenhouse';
       if(/bram|ogrodz|furt/.test(x))return 'gates';
       if(/detail|auto|samoch|lakier|ceram|poler/.test(x))return 'auto';
-      if(/budow|remont|wykoń|wykoncz/.test(x))return 'build';
-      if(/fryz|beauty|kosmet|paznok/.test(x))return 'beauty';
+      if(/stomatolog|dentyst|gabinet stomat|higieniz|leczenie kanał|kanalow|wybielanie zęb|wybielanie zeb/.test(x))return 'dental';
+      if(/budowl|remont|wykończ|wykoncz|elewac|murarsk/.test(x))return 'build';
+      if(/fryz|beauty|kosmet|paznok|manicure|brwi|rzęs|rzes/.test(x))return 'beauty';
       if(/transport|przeprowad|kurier|dostaw/.test(x))return 'transport';
       return 'general'
     }
@@ -271,6 +278,7 @@ const msgs=document.getElementById('msgs');
         greenhouse:['Szklarnia dopasowana do Twojego ogrodu.','Więcej sezonu. Więcej zbiorów.','Solidna konstrukcja. Jasny montaż.','Twoja szklarnia — gotowa na kolejne sezony.'],
         gates:['Brama na wymiar. Bez kompromisów.','Od pomiaru do gotowej bramy.','Twój wjazd. Nasza stal. Gotowy efekt.','Bramy, które naprawdę pasują do posesji.'],
         auto:['Auto, które znów robi wrażenie.','Efekt widać od pierwszego spojrzenia.','Czysto. Głęboko. Zabezpieczone.'],
+        dental:['Zdrowy uśmiech zaczyna się od dobrej diagnostyki.','Spokojna wizyta. Jasny plan leczenia.','Stomatologia bez zbędnego stresu.'],
         build:['Konkretny zakres. Porządne wykonanie.','Od planu do gotowego efektu.','Remont bez chaosu i niedomówień.'],
         beauty:['Efekt, po który chce się wracać.','Twój czas. Twój efekt.','Profesjonalnie, ale bez sztywnej atmosfery.'],
         transport:['Dowozimy. Na czas. Bez komplikacji.','Transport, który po prostu działa.','Trasa ustalona. Ładunek zabezpieczony. Termin dotrzymany.'],
@@ -286,6 +294,7 @@ const msgs=document.getElementById('msgs');
         return `Pomiar, wykonanie i montaż pod konkretny wjazd. ${area}.`;
       }
       if(cat==='auto')return `Dobieramy usługę do stanu auta i efektu, którego oczekujesz. ${area}.`;
+      if(cat==='dental')return `Diagnoza, zrozumiałe wyjaśnienie możliwości i leczenie dopasowane do potrzeb pacjenta. ${area}.`;
       if(cat==='build')return `Najpierw zakres i wycena. Potem sprawna realizacja bez zgadywania. ${area}.`;
       if(cat==='transport')return `Podajesz trasę i ładunek. My ustalamy termin i konkretną cenę. ${area}.`;
       if(cat==='beauty')return `Wybierasz efekt. My dobieramy usługę i dogodny termin. ${area}.`;
@@ -311,8 +320,17 @@ const msgs=document.getElementById('msgs');
       if(/ceram/.test(n))return 'Zabezpieczamy lakier i wydobywamy głębię koloru na dłużej.';
       if(/poler|korekt/.test(n))return 'Usuwamy widoczne niedoskonałości i przywracamy lakierowi głębię.';
       if(/pran|wnętr|wnetr/.test(n))return 'Czyścimy wnętrze dokładnie, z metodą dobraną do materiału.';
-      if(/remont|wykoń|wykoncz/.test(n))return 'Ustalamy zakres przed startem i prowadzimy prace krok po kroku.';
-      return 'Ustalamy zakres, wyceniamy konkretnie i realizujemy bez zbędnych niespodzianek.'
+      if(/przegląd|przeglad|konsult/.test(n)&&/stomatolog|dent|zęb|zeb/.test(ctx))return 'Sprawdzamy stan jamy ustnej i jasno omawiamy, co warto zrobić dalej.';
+      if(/higieniz|skaling|piaskow/.test(n))return 'Dokładnie usuwamy osad i kamień, pomagając zadbać o zdrowie dziąseł i świeży uśmiech.';
+      if(/wybiel/.test(n)&&/ząb|zab|zęb|zeb/.test(n))return 'Dobieramy bezpieczną metodę wybielania do stanu zębów i oczekiwanego efektu.';
+      if(/kanał|kanal/.test(n))return 'Leczymy ząb precyzyjnie, z jasnym omówieniem kolejnych etapów terapii.';
+      if(/manicure|hybryd/.test(n))return 'Starannie opracowujemy paznokcie i dobieramy stylizację do efektu, który chcesz uzyskać.';
+      if(/paznok|żel|zel/.test(n))return 'Budujemy estetyczną i trwałą stylizację dopasowaną do dłoni i Twojego stylu.';
+      if(/laminac.*brwi|brwi.*laminac/.test(n))return 'Układamy i podkreślamy brwi tak, aby efekt był naturalny i łatwy w codziennym utrzymaniu.';
+      if(/regulac.*brwi|brwi.*regulac/.test(n))return 'Nadajemy brwiom kształt dopasowany do rysów twarzy i oczekiwanego efektu.';
+      if(/rzęs|rzes/.test(n))return 'Dobieramy stylizację do oka i efektu, który chcesz osiągnąć — od naturalnego po bardziej wyrazisty.';
+      if(/remont|wykończ|wykoncz/.test(n))return 'Ustalamy zakres przed startem i prowadzimy prace krok po kroku.';
+      return 'Krótko wyjaśniamy zakres usługi, ustalamy potrzeby i proponujemy konkretny następny krok.'
     }
     function aboutCopy(d){
       const cat=categoryKey(d), f=businessFeatures(d), area=areaCopy(d), name=d.company||'Nasza firma';
@@ -322,6 +340,8 @@ const msgs=document.getElementById('msgs');
         return `${name} tworzy bramy i ogrodzenia na wymiar — od pomiaru po montaż.${own} ${area}.`;
       }
       if(cat==='auto')return `${name} dba o wygląd i zabezpieczenie aut. Dobieramy zakres do stanu samochodu, a nie do gotowego pakietu. ${area}.`;
+      if(cat==='dental')return `${name} zapewnia opiekę stomatologiczną z naciskiem na spokojną atmosferę, zrozumiałe wyjaśnienie leczenia i indywidualne podejście do pacjenta. ${area}.`;
+      if(cat==='beauty')return `${name} to miejsce, w którym liczy się estetyka, higiena i efekt dopasowany do Ciebie. Każdą wizytę zaczynamy od krótkiego ustalenia oczekiwań. ${area}.`;
       if(cat==='build')return `${name} realizuje prace według ustalonego zakresu. Bez niedomówień, z jasnym kontaktem na każdym etapie. ${area}.`;
       if(cat==='transport')return `${name} organizuje przewóz sprawnie i konkretnie — trasa, termin i warunki są jasne od początku. ${area}.`;
       return `${name} stawia na jasne ustalenia, dobry kontakt i rozwiązania dopasowane do konkretnego zlecenia. ${area}.`
@@ -331,10 +351,14 @@ const msgs=document.getElementById('msgs');
       if(cat==='greenhouse')return [['Dopasowanie do ogrodu','Rozmiar i konstrukcja pod konkretną przestrzeń'],['Poliwęglan i konstrukcja','Materiały dobrane do codziennego użytkowania'],['Elastyczny montaż','Montaż przez nas lub przygotowanie zestawu do samodzielnego skręcenia']];
       if(cat==='gates')return [[f.includes('Pomiar i wykonanie pod wymiar')?'Pod wymiar':'Dopasowanie','Nie z katalogu — pod konkretny wjazd'],[f.includes('Własna produkcja')?'Własna produkcja':'Pewny proces','Kontrola od stali do montażu'],['Lokalnie',area]];
       if(cat==='auto')return [['Dobór zakresu','Tylko to, czego auto naprawdę potrzebuje'],['Detal','Efekt widać z bliska'],['Termin','Szybkie i jasne ustalenie']];
-      return [['Jasny zakres','Wiesz, za co płacisz'],['Dobry kontakt','Bez gonienia za odpowiedzią'],['Lokalnie',area]]
+      if(cat==='dental')return [['Spokojne podejście','Jasno tłumaczymy kolejne etapy'],['Plan leczenia','Wiesz, jakie są możliwości i co robimy dalej'],['Lokalnie',area]];
+      if(cat==='beauty')return [['Higiena','Czyste stanowisko i bezpieczne narzędzia'],['Dobór efektu','Stylizacja dopasowana do Ciebie'],['Wizyta','Jasne ustalenie usługi i terminu']];
+      return [['Jasny zakres','Wiesz, co obejmuje usługa'],['Dobry kontakt','Bez gonienia za odpowiedzią'],['Lokalnie',area]]
     }
     function whyCards(d){
       const f=businessFeatures(d), cat=categoryKey(d), cards=[];
+      if(cat==='dental')return [['Spokojna wizyta','Dbamy o komfort i jasną komunikację od pierwszego kontaktu.'],['Zrozumiały plan','Wyjaśniamy możliwe rozwiązania i kolejne kroki leczenia.'],['Nowoczesne podejście','Diagnostykę i leczenie dobieramy do konkretnej sytuacji.'],['Profilaktyka','Pomagamy dbać o zdrowie jamy ustnej również między wizytami.']];
+      if(cat==='beauty')return [['Indywidualny efekt','Najpierw ustalamy, jaki rezultat chcesz uzyskać.'],['Higiena','Dbamy o czystość stanowiska i bezpieczne przygotowanie narzędzi.'],['Spokojna atmosfera','Wizyta ma być przyjemna, nie pośpieszna.'],['Estetyka','Liczy się dopracowany efekt, który pasuje do Ciebie.']];
       if(cat==='greenhouse')return [['Dopasowana konstrukcja','Rozmiar i układ dobieramy do konkretnego ogrodu.'],['Poliwęglan','Lekka i praktyczna osłona do wydłużenia sezonu.'],['Opcja samodzielnego montażu','Możemy przygotować komplet elementów do skręcenia przez klienta.'],['Wsparcie po zakupie','Pomagamy również przy konserwacji i dalszej eksploatacji.']];
       if(f.includes('Własna produkcja'))cards.push(['Własna produkcja','Kontrolujemy wykonanie od pierwszego cięcia.']);
       if(f.includes('Pomiar i wykonanie pod wymiar'))cards.push(['Pomiar na miejscu','Mierzymy przed produkcją, żeby wszystko pasowało.']);
@@ -373,6 +397,12 @@ const msgs=document.getElementById('msgs');
       for(const [needle,key] of map){if((x.includes('zmień')||x.includes('zmien')||x.includes('popraw'))&&x.includes(needle)){chat.phase='ask';chat.pendingKey=key;chat.step=Math.max(0,questions.findIndex(q=>q.key===key));ai(`Okej — wracamy do pola „${fieldLabel(key)}”. Podaj nową wersję.`);return true}}return false
     }
 
+    function actionLabel(d){const cat=categoryKey(d);if(cat==='dental'||cat==='beauty')return 'Umów wizytę';if(cat==='auto')return 'Zapytaj o termin';if(cat==='transport')return 'Sprawdź termin i cenę';return 'Poproś o wycenę'}
+    function formTitleCopy(d){const cat=categoryKey(d);if(cat==='dental')return 'Umów wizytę lub konsultację';if(cat==='beauty')return 'Umów wizytę';if(cat==='auto')return 'Zapytaj o termin i zakres';return 'Poproś o bezpłatną wycenę'}
+    function formIntroCopy(d){const cat=categoryKey(d);if(cat==='dental')return 'Zostaw kontakt i krótko napisz, z czym się zgłaszasz.';if(cat==='beauty')return 'Zostaw kontakt i napisz, jaka usługa Cię interesuje.';return 'Zostaw kontakt i krótko opisz, czego potrzebujesz.'}
+    function messageLabelCopy(d){const cat=categoryKey(d);if(cat==='dental')return 'Z czym się zgłaszasz?';if(cat==='beauty')return 'Jaki efekt lub usługę wybierasz?';return 'Krótki opis zlecenia'}
+    function highlightClaim(d){const cat=categoryKey(d),f=businessFeatures(d);if(cat==='dental')return 'Spokojne podejście i jasny plan leczenia';if(cat==='beauty')return 'Higiena, estetyka i efekt dopasowany do Ciebie';return f[0]||cleanUsp(d.usp)||'Dobra realizacja zaczyna się od dobrych ustaleń.'}
+
     function renderDemo(save=false){
       const d=chat.data;const copy=siteCopy(d);const services=normalizeServices(d.services||'Profesjonalna obsługa, Indywidualna wycena, Szybka realizacja');const heroPhoto=d.photos[0]||d.projectPhotos[0]||'';const email=/pomiń/i.test(d.email||'')?'':d.email;const cls=themeClass(d.style);const layout=layoutClass(d);const domains=domainIdeas(d);const trust=trustItems(d);const why=whyCards(d);const extras=d.extras||[];
       const logo=d.logo?`<img class="demoLogo" src="${d.logo}" alt="Logo ${esc(d.company)}">`:`<span class="demoLogoFallback">${esc(initials(d.company))}</span>`;
@@ -381,17 +411,17 @@ const msgs=document.getElementById('msgs');
       const faq=extras.some(x=>/faq/i.test(x))?`<section class="demoSection alt"><div class="demoSectionHead"><span class="demoEyebrow">FAQ</span><h3>Najczęstsze pytania</h3></div><div class="demoWhyCards"><div class="demoWhyCard"><b>Jak wygląda wycena?</b><span>Najpierw zbieramy zakres i potrzebne wymiary, a potem przedstawiamy konkretny kolejny krok.</span></div><div class="demoWhyCard"><b>Czy można zamówić usługę pod wymiar?</b><span>Tak — zakres dopasowujemy do konkretnego zlecenia i warunków na miejscu.</span></div><div class="demoWhyCard"><b>Jaki jest termin?</b><span>Termin zależy od zakresu. Po krótkiej rozmowie możemy podać realny przedział.</span></div></div></section>`:'';
       const priceSection=extras.some(x=>/cennik/i.test(x))?`<section class="demoSection"><div class="demoSectionHead"><span class="demoEyebrow">Wycena</span><h3>Cena zależy od zakresu</h3><p class="demoSectionLead">Zamiast przypadkowych widełek pokazujemy klientowi, od czego zależy koszt i kierujemy go do szybkiej wyceny.</p></div><div class="demoWhyCards"><div class="demoWhyCard"><b>Wymiary / zakres</b><span>Wpływają na ilość materiału i czas pracy.</span></div><div class="demoWhyCard"><b>Wykończenie</b><span>Rodzaj wykonania i dodatkowe opcje zmieniają końcową cenę.</span></div><div class="demoWhyCard"><b>Montaż</b><span>Warunki na miejscu uwzględniamy przed finalną wyceną.</span></div></div></section>`:'';
       const reviews=extras.some(x=>/opini/i.test(x))?`<section class="demoSection alt"><div class="demoSectionHead"><span class="demoEyebrow">Opinie</span><h3>Miejsce na opinie klientów</h3><p class="demoSectionLead">Po uruchomieniu możemy podpiąć prawdziwe opinie z Google lub dodać zweryfikowane referencje.</p></div></section>`:'';
-      const about=`<section class="demoSection alt"><div class="demoWhy"><div><span class="demoEyebrow">O firmie</span><h3>${esc(d.company||'Poznaj nas bliżej')}</h3><p class="demoAboutText">${esc(aboutCopy(d))}</p><div class="demoWhyCards">${why.map(x=>`<div class="demoWhyCard"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div></div><div class="demoQuote"><b>${esc((businessFeatures(d)[0]||cleanUsp(d.usp)||'Dobra realizacja zaczyna się od dobrych ustaleń.'))}</b><p>${esc(d.city?`${d.city} + okolice. Najpierw ustalamy potrzebę, potem dobieramy rozwiązanie.`:'Najpierw ustalamy potrzebę, potem dobieramy rozwiązanie.')}</p><span class="quoteMeta">${esc(d.company||'Twoja firma')}</span></div></div></section>`;
-      const servicesHtml=`<section class="demoSection" id="demo-uslugi"><div class="demoSectionHead"><span class="demoEyebrow">Oferta</span><h3>${esc(copy.servicesTitle)}</h3><p class="demoSectionLead">${esc(copy.servicesLead)}</p></div><div class="demoServices">${services.map((x,i)=>`<article class="demoService"><span class="demoServiceNo">${String(i+1).padStart(2,'0')}</span><h4>${esc(x)}</h4><p>${esc(serviceDesc(x,d.industry))}</p><span class="demoServiceTag">Zapytaj o wycenę</span></article>`).join('')}</div></section>`;
+      const about=`<section class="demoSection alt"><div class="demoWhy"><div><span class="demoEyebrow">O firmie</span><h3>${esc(d.company||'Poznaj nas bliżej')}</h3><p class="demoAboutText">${esc(aboutCopy(d))}</p><div class="demoWhyCards">${why.map(x=>`<div class="demoWhyCard"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div></div><div class="demoQuote"><b>${esc(highlightClaim(d))}</b><p>${esc(d.city?`${d.city} + okolice. Najpierw ustalamy potrzebę, potem dobieramy rozwiązanie.`:'Najpierw ustalamy potrzebę, potem dobieramy rozwiązanie.')}</p><span class="quoteMeta">${esc(d.company||'Twoja firma')}</span></div></div></section>`;
+      const servicesHtml=`<section class="demoSection" id="demo-uslugi"><div class="demoSectionHead"><span class="demoEyebrow">Oferta</span><h3>${esc(copy.servicesTitle)}</h3><p class="demoSectionLead">${esc(copy.servicesLead)}</p></div><div class="demoServices">${services.map((x,i)=>`<article class="demoService"><span class="demoServiceNo">${String(i+1).padStart(2,'0')}</span><h4>${esc(x)}</h4><p>${esc(serviceDesc(x,d.industry))}</p><span class="demoServiceTag">${esc(actionLabel(d))}</span></article>`).join('')}</div></section>`;
       const midSections=layout==='layout-showcase'?(gallery+projects+servicesHtml+about):(servicesHtml+about+gallery+projects);
       const navProjects=d.projectPhotos.length?'<a href="#demo-projekty">Projekty</a>':'';
       generatedSite.innerHTML=`<div class="clientDemo ${cls} ${layout}">
-        <nav class="demoNav"><div class="demoBrand">${logo}<span>${esc(d.company||'Twoja Firma')}</span></div><div class="demoNavLinks"><a href="#demo-uslugi">Usługi</a><a href="#demo-realizacje">Realizacje</a>${navProjects}<span>O nas</span><a href="#demo-kontakt">Kontakt</a></div><span class="demoNavCta">Bezpłatna wycena</span></nav>
-        <section class="demoSiteHero ${heroPhoto?'hasPhoto':''}">${heroPhoto?`<img class="demoHeroPhoto" src="${heroPhoto}" alt="${esc(d.company)}">`:''}<div class="demoHeroContent"><div class="demoKicker"><span class="demoPill">${esc(d.city||'Twoja okolica')}</span><span class="demoPill secondary">${esc(industryLabel(d.industry))}</span></div><h2>${esc(heroTitle(d))}</h2><p>${esc(heroLead(d))}</p><div class="demoHeroActions"><a class="demoCTA" href="#demo-kontakt">Poproś o wycenę</a>${d.photos.length?'<a class="demoCTA ghost" href="#demo-realizacje">Zobacz realizacje</a>':''}</div></div></section>
+        <nav class="demoNav"><div class="demoBrand">${logo}<span>${esc(d.company||'Twoja Firma')}</span></div><div class="demoNavLinks"><a href="#demo-uslugi">Usługi</a><a href="#demo-realizacje">Realizacje</a>${navProjects}<span>O nas</span><a href="#demo-kontakt">Kontakt</a></div><span class="demoNavCta">${esc(actionLabel(d))}</span></nav>
+        <section class="demoSiteHero ${heroPhoto?'hasPhoto':''}">${heroPhoto?`<img class="demoHeroPhoto" src="${heroPhoto}" alt="${esc(d.company)}">`:''}<div class="demoHeroContent"><div class="demoKicker"><span class="demoPill">${esc(d.city||'Twoja okolica')}</span><span class="demoPill secondary">${esc(industryLabel(d.industry))}</span></div><h2>${esc(heroTitle(d))}</h2><p>${esc(heroLead(d))}</p><div class="demoHeroActions"><a class="demoCTA" href="#demo-kontakt">${esc(actionLabel(d))}</a>${d.photos.length?'<a class="demoCTA ghost" href="#demo-realizacje">Zobacz realizacje</a>':''}</div></div></section>
         <div class="demoTrust">${trust.map(x=>`<div class="demoTrustItem"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>
         ${midSections}${faq}${priceSection}${reviews}
         <div class="demoCtaBand"><div><h3>${esc(copy.ctaTitle)}</h3><p>${esc(copy.ctaLead)}</p></div><a class="demoCTA" href="#demo-kontakt">Skontaktuj się</a></div>
-        <section class="demoContact" id="demo-kontakt"><div class="demoContactGrid"><div><span class="demoPill">Kontakt</span><h3>${esc(copy.contactTitle)}</h3><p>${esc(copy.contactLead)}</p><div class="demoContactList"><div class="demoContactItem"><b>Telefon</b><br>${esc(d.phone||'do uzupełnienia')}</div>${email?`<div class="demoContactItem"><b>E-mail</b><br>${esc(email)}</div>`:''}<div class="demoContactItem"><b>Obszar działania</b><br>${esc(d.city||'do uzupełnienia')} i okolice</div></div></div><form class="demoRealForm" data-demo-form><h4>Poproś o bezpłatną wycenę</h4><p class="formIntro">Zostaw kontakt i krótko opisz, czego potrzebujesz.</p><div class="demoField"><label>Imię i nazwisko</label><input name="name" required placeholder="Np. Jan Kowalski"></div><div class="demoField"><label>Telefon</label><input name="phone" required placeholder="Np. 500 000 000"></div><div class="demoField"><label>E-mail <span style="font-weight:500;color:#8693a0">(opcjonalnie)</span></label><input name="email" type="email" placeholder="Np. kontakt@firma.pl"></div><div class="demoField"><label>W czym możemy pomóc?</label><select name="service"><option value="">Wybierz usługę</option>${services.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div><div class="demoField"><label>Krótki opis zlecenia</label><textarea name="message" placeholder="Napisz np. wymiary, termin lub czego dokładnie potrzebujesz"></textarea></div><button class="demoCTA demoFormSubmit" type="submit">Wyślij zapytanie</button><div class="demoFormSuccess">✓ Demo: zgłoszenie zapisane jako lead w tej przeglądarce.</div></form></div></section>
+        <section class="demoContact" id="demo-kontakt"><div class="demoContactGrid"><div><span class="demoPill">Kontakt</span><h3>${esc(copy.contactTitle)}</h3><p>${esc(copy.contactLead)}</p><div class="demoContactList"><div class="demoContactItem"><b>Telefon</b><br>${esc(d.phone||'do uzupełnienia')}</div>${email?`<div class="demoContactItem"><b>E-mail</b><br>${esc(email)}</div>`:''}<div class="demoContactItem"><b>Obszar działania</b><br>${esc(d.city||'do uzupełnienia')} i okolice</div></div></div><form class="demoRealForm" data-demo-form><h4>${esc(formTitleCopy(d))}</h4><p class="formIntro">${esc(formIntroCopy(d))}</p><div class="demoField"><label>Imię i nazwisko</label><input name="name" required placeholder="Np. Jan Kowalski"></div><div class="demoField"><label>Telefon</label><input name="phone" required placeholder="Np. 500 000 000"></div><div class="demoField"><label>E-mail <span style="font-weight:500;color:#8693a0">(opcjonalnie)</span></label><input name="email" type="email" placeholder="Np. kontakt@firma.pl"></div><div class="demoField"><label>W czym możemy pomóc?</label><select name="service"><option value="">Wybierz usługę</option>${services.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div><div class="demoField"><label>${esc(messageLabelCopy(d))}</label><textarea name="message" placeholder="Napisz krótko, czego potrzebujesz"></textarea></div><button class="demoCTA demoFormSubmit" type="submit">Wyślij zapytanie</button><div class="demoFormSuccess">✓ Demo: zgłoszenie zapisane jako lead w tej przeglądarce.</div></form></div></section>
         <div class="domainIdeas"><b>Propozycje domen dla tej firmy</b><div class="domainChips">${domains.map(x=>`<span class="domainChip">${esc(x)}</span>`).join('')}</div></div>
         <div class="previewNote">🔒 To jest wersja demonstracyjna. Publikacja, domena, baza leadów, pełny chatbot AI, generowanie treści/logo przez model AI i integracje są aktywowane po wybraniu pakietu.</div>
         <button class="clientChatBtn" type="button" data-client-chat-toggle aria-label="Otwórz asystenta">💬</button>

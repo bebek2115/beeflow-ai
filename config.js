@@ -1,7 +1,7 @@
 // BeeFlow AI — konfiguracja frontendu.
 // Ten plik trzyma dane, które będziemy później zasilać z backendu.
 window.BEEFLOW_CONFIG = {
-  version: '10-structured',
+  version: '11-petarda',
   questions: [
 
       {key:'company',q:'Jak nazywa się Twoja firma? Jeśli nie masz jeszcze nazwy, napisz „nie mam nazwy”.'},
