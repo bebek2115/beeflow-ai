@@ -57,9 +57,27 @@ const msgs=document.getElementById('msgs');
     function normalizeServices(raw){return raw.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean).slice(0,8)}
     function fieldLabel(key){return ({company:'nazwa firmy',industry:'branża / zakres działalności',city:'obszar działania',services:'usługi',style:'styl strony',usp:'wyróżnik firmy',phone:'telefon',email:'e-mail'})[key]||key}
     function fieldSummary(key,value){if(key==='services')return normalizeServices(value).join(' • ');if(key==='usp'&&!value)return 'bez dodatkowego wyróżnika';if(key==='email'&&!value)return 'e-mail ukryty';return value}
-    function isYes(t){return /^(tak|tak,|zgadza|zgadza się|ok|okej|dobrze|zostaw|pasuje|ta odpowiada|może być|super)/i.test(t)}
-    function isNo(t){return /^(nie|nie,|inna|inny|zmień|zmien|popraw|nie pasuje|nie odpowiada)/i.test(t)}
-    function isNoName(t){return /^(nie mam( nazwy)?|brak( nazwy)?|bez nazwy)$/i.test(t.trim())}
+    function intentText(t=''){return String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim()}
+    function editDistance(a='',b=''){a=String(a);b=String(b);const dp=Array.from({length:a.length+1},()=>Array(b.length+1).fill(0));for(let i=0;i<=a.length;i++)dp[i][0]=i;for(let j=0;j<=b.length;j++)dp[0][j]=j;for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return dp[a.length][b.length]}
+    function isYes(t){const x=intentText(t);if(/^(tak|zgadza|zgadza sie|ok|okej|dobrze|zostaw|pasuje|ta odpowiada|moze byc|super)/.test(x))return true;return x.length<=4&&['tak','tka'].some(v=>editDistance(x,v)<=1)}
+    function isNo(t){const x=intentText(t);if(/^(nie|inna|inny|zmien|popraw|nie pasuje|nie odpowiada)/.test(x))return true;return x.length<=4&&['nie','nei'].some(v=>editDistance(x,v)<=1)}
+    function isNoName(t){
+      const x=intentText(t);
+      if(!x)return false;
+      if(/^(brak nazwy|bez nazwy|nie mam nazwy|nie ma nazwy|nie mamy nazwy|nie posiadam nazwy|nie posiadamy nazwy|nie mam jeszcze nazwy|jeszcze nie mam nazwy)$/.test(x))return true;
+      const compact=x.replace(/\s+/g,'');
+      const variants=['braknazwy','beznazwy','niemamnazwy','niemanazwy','niemamynazwy','nieposiadamnazwy','nieposiadamynazwy','niemamjeszczenazwy','jeszczeniemamnazwy'];
+      return variants.some(v=>Math.abs(v.length-compact.length)<=2&&editDistance(compact,v)<=2);
+    }
+    function handleNoNameIntent(){
+      chat.needsName=true;chat.data.company='';chat.pendingKey=null;chat.pendingValue='';
+      ai('Rozumiem — nie masz jeszcze nazwy firmy. Literówka nie szkodzi 🙂 Nie zapiszę tej odpowiedzi jako nazwy.');
+      if(chat.data.industry){chat.phase='naming';setTimeout(()=>offerNameSuggestion(true),220);return}
+      chat.phase='ask';
+      const current=questions[chat.step];
+      if(current&&current.key==='company')chat.step++;
+      setTimeout(askCurrent,220);
+    }
     function sanitizeValue(key,t){if(key==='usp'&&/^(pomiń|brak|nic)$/i.test(t))return '';if(key==='email'&&/^(pomiń|brak|nie chcę|nie chce)$/i.test(t))return '';return t.trim()}
     function askCurrent(){updateProgress();const next=questions[chat.step];if(!next){startExtras();return}chat.phase='ask';chat.pendingKey=next.key;ai(next.q);if(next.chips)setTimeout(()=>addChips(next.chips),260)}
     function confirmValue(key,value){chat.phase='confirm';chat.pendingKey=key;chat.pendingValue=value;ai(`<div class="chatSummary"><b>Rozumiem to tak:</b><br>${esc(fieldLabel(key))}: <b>${esc(fieldSummary(key,value))}</b><span class="smartHint">Nie przejdę dalej, dopóki tego nie potwierdzisz.</span></div>`,true);setTimeout(addConfirmButtons,170)}
@@ -84,16 +102,19 @@ const msgs=document.getElementById('msgs');
     }
 
 
-    function detectGlobalCorrection(t){const x=t.toLowerCase();if(/inna\s+nazwa|zmień\s+nazw|zmien\s+nazw|nie.*nazwa/.test(x)){chat.nameRound++;offerNameSuggestion(true);return true}const map=[['miast','city'],['obszar','city'],['usług','services'],['styl','style'],['telefon','phone'],['mail','email'],['e-mail','email'],['wyróż','usp'],['branż','industry']];for(const [needle,key] of map){if((x.includes('zmień')||x.includes('zmien')||x.includes('popraw'))&&x.includes(needle)){chat.phase='ask';chat.pendingKey=key;chat.step=Math.max(0,questions.findIndex(q=>q.key===key));ai(`Okej — wracamy do pola „${fieldLabel(key)}”. Podaj nową wersję.`);return true}}return false}
+    function detectGlobalCorrection(t){const x=t.toLowerCase();if(isNoName(t))return false;if(/inna\s+nazwa|zmień\s+nazw|zmien\s+nazw|nie.*podoba.*nazwa|nazwa.*nie.*pasuje/.test(x)){chat.nameRound++;offerNameSuggestion(true);return true}const map=[['miast','city'],['obszar','city'],['usług','services'],['styl','style'],['telefon','phone'],['mail','email'],['e-mail','email'],['wyróż','usp'],['branż','industry']];for(const [needle,key] of map){if((x.includes('zmień')||x.includes('zmien')||x.includes('popraw'))&&x.includes(needle)){chat.phase='ask';chat.pendingKey=key;chat.step=Math.max(0,questions.findIndex(q=>q.key===key));ai(`Okej — wracamy do pola „${fieldLabel(key)}”. Podaj nową wersję.`);return true}}return false}
 
     function handleAskAnswer(t){const current=questions[chat.step];if(!current){startExtras();return}const key=current.key;if(key==='company'&&isNoName(t)){chat.needsName=true;chat.data.company='';chat.step++;ai('Jasne — najpierw poznam branżę, a potem zaproponuję nazwę i nie pójdziemy dalej, dopóki jej nie zaakceptujesz.');setTimeout(askCurrent,180);return}const value=sanitizeValue(key,t);if(key==='services'&&normalizeServices(value).length<2){ai('Daj mi proszę przynajmniej 2 usługi. Możesz je oddzielić przecinkami.');return}confirmValue(key,value)}
 
-    function submitMessage(text){const t=(text??inp.value).trim();if(!t)return;bubble(t,'user');inp.value='';if(detectGlobalCorrection(t))return;
+    function submitMessage(text){const t=(text??inp.value).trim();if(!t)return;bubble(t,'user');inp.value='';
+      const currentKey=questions[chat.step]&&questions[chat.step].key;
+      if(isNoName(t)&&(currentKey==='company'||chat.pendingKey==='company'||chat.phase==='naming'||chat.phase==='naming-custom')){handleNoNameIntent();return}
+      if(detectGlobalCorrection(t))return;
       if(chat.phase==='confirm'){if(isYes(t)){handleConfirmation('yes');return}if(isNo(t)){handleConfirmation('no');return}chat.pendingValue=sanitizeValue(chat.pendingKey,t);confirmValue(chat.pendingKey,chat.pendingValue);return}
       if(chat.phase==='industry-confirm'){if(isYes(t)){offerNameSuggestion();return}if(isNo(t)){chat.phase='industry-manual';ai('Jasne. Napisz w 2–6 słowach, czym dokładnie zajmuje się firma.');return}chat.data.industry=deriveIndustryLabel(t);confirmDetectedIndustry();return}
       if(chat.phase==='industry-manual'){chat.data.industry=deriveIndustryLabel(t);confirmDetectedIndustry();return}
-      if(chat.phase==='naming'){if(/inna|inny|kolejn|bardziej|coś|cos|propozycj|jeszcze/.test(t.toLowerCase())){offerNameSuggestion(true);return}if(isYes(t)){confirmValue('company',chat.lastSuggestedName);return}if(looksLikeBusinessDescription(t)){chat.data.businessBrief=(chat.data.businessBrief?chat.data.businessBrief+'; ':'')+t;chat.data.industry=deriveIndustryLabel(t);ai('To wygląda jak opis działalności, a nie nazwa firmy. Nie zapiszę tego jako nazwy — wykorzystam to do lepszego rozpoznania branży.');setTimeout(confirmDetectedIndustry,160);return}confirmValue('company',t);return}
-      if(chat.phase==='naming-custom'){if(looksLikeBusinessDescription(t)){ai('To nadal wygląda jak opis działalności. Wpisz proszę samą nazwę firmy, np. „AutoSelect”.');return}confirmValue('company',t);return}
+      if(chat.phase==='naming'){if(isNoName(t)){handleNoNameIntent();return}if(/inna|inny|kolejn|bardziej|coś|cos|propozycj|jeszcze/.test(t.toLowerCase())){offerNameSuggestion(true);return}if(isYes(t)){confirmValue('company',chat.lastSuggestedName);return}if(looksLikeBusinessDescription(t)){chat.data.businessBrief=(chat.data.businessBrief?chat.data.businessBrief+'; ':'')+t;chat.data.industry=deriveIndustryLabel(t);ai('To wygląda jak opis działalności, a nie nazwa firmy. Nie zapiszę tego jako nazwy — wykorzystam to do lepszego rozpoznania branży.');setTimeout(confirmDetectedIndustry,160);return}confirmValue('company',t);return}
+      if(chat.phase==='naming-custom'){if(isNoName(t)){handleNoNameIntent();return}if(looksLikeBusinessDescription(t)){ai('To nadal wygląda jak opis działalności. Wpisz proszę samą nazwę firmy, np. „AutoSelect”.');return}confirmValue('company',t);return}
       if(chat.phase==='extras'){handleExtraAnswer(t);return}
       handleAskAnswer(t)}
     form.addEventListener('submit',e=>{e.preventDefault();submitMessage();requestAnimationFrame(()=>{inp.focus({preventScroll:true});msgs.scrollTop=msgs.scrollHeight})});
