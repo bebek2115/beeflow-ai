@@ -68,11 +68,20 @@ const msgs=document.getElementById('msgs');
       setTimeout(askCurrent,180)}
     function handleConfirmation(answerText){if(chat.phase!=='confirm')return;if(answerText==='yes'||isYes(answerText)){commitPending();return}chat.phase='ask';const key=chat.pendingKey;chat.pendingValue='';if(key==='company'){if(!chat.data.industry){chat.needsName=true;chat.step=1;ai('Jasne. Żeby zaproponować dobrą nazwę, najpierw muszę wiedzieć dokładnie, czym zajmuje się firma.');setTimeout(askCurrent,180);return}chat.nameRound++;offerNameSuggestion(true);return}ai(`Jasne. Poprawmy ${fieldLabel(key)}. Napisz właściwą wersję, a najpierw ją potwierdzę.`)}
 
-    function nameTokens(industry=''){const x=industry.toLowerCase();if(/szklar|poliwęgl|poliwegl|greenhouse|tunel/.test(x))return ['GreenForma','Ogrody Pod Szkłem','PolyGarden','GreenHouse Pro','GardenFrame','VitaGlass'];if(/bram|ogrod|furt/.test(x))return ['StalForma','BramaLab','StalPoint','ForgeLine','SolidGate','MetalForma'];if(/detail|auto|samoch|lakier/.test(x))return ['DetailForge','AutoGlow','PrimeDetail','ShineLab','DetailPoint','AutoForma'];if(/stomatolog|dentyst|gabinet stomat|higieniz|leczenie kanał|kanalow/.test(x))return ['DentaNova','SmilePoint','NovaDent','DentCare','DentAura','WhiteDent'];if(/budowl|remont|wykończ|wykoncz|elewac|murarsk/.test(x))return ['SolidDom','BuildForma','ProConstruct','DomPoint','FormaBud','BuildLab'];if(/fryz|beauty|kosmet|paznok|manicure|brwi|rzęs|rzes/.test(x))return ['AuraStudio','PureLine','NovaBeauty','GlowRoom','FormaBeauty','LunaStudio'];if(/transport|przeprowad|kurier/.test(x))return ['MovePoint','CargoFlow','TransForma','RoutePro','FastLine','MoveLab'];const base=(industry||'Firma').replace(/[^\p{L}\p{N} ]/gu,' ').trim().split(/\s+/)[0]||'Firma';return [base+' Studio',base+' Pro',base+' Point',base+' Lab',base+' Works',base+' Prime']}
+    function nameTokens(industry=''){const x=industry.toLowerCase();if(/import|sprowadz|sprzedaż samoch|sprzedaz samoch|handel aut|komis/.test(x))return ['AutoSelect','MotoSource','CarBridge','AutoPort','DriveSelect','MotoPrime'];if(/szklar|poliwęgl|poliwegl|greenhouse|tunel/.test(x))return ['GreenForma','Ogrody Pod Szkłem','PolyGarden','GreenHouse Pro','GardenFrame','VitaGlass'];if(/bram|ogrod|furt/.test(x))return ['StalForma','BramaLab','StalPoint','ForgeLine','SolidGate','MetalForma'];if(/detail|lakier|ceram|poler|auto detail/.test(x))return ['DetailForge','AutoGlow','PrimeDetail','ShineLab','DetailPoint','AutoForma'];if(/stomatolog|dentyst|gabinet stomat|higieniz|leczenie kanał|kanalow/.test(x))return ['DentaNova','SmilePoint','NovaDent','DentCare','DentAura','WhiteDent'];if(/budowl|remont|wykończ|wykoncz|elewac|murarsk/.test(x))return ['SolidDom','BuildForma','ProConstruct','DomPoint','FormaBud','BuildLab'];if(/fryz|beauty|kosmet|paznok|manicure|brwi|rzęs|rzes/.test(x))return ['AuraStudio','PureLine','NovaBeauty','GlowRoom','FormaBeauty','LunaStudio'];if(/transport|przeprowad|kurier/.test(x))return ['MovePoint','CargoFlow','TransForma','RoutePro','FastLine','MoveLab'];return ['Nexa','VeroPoint','NovaForma','Primeo','Noviq','FormaOne']}
     function scoreName(name){let score=7;const len=name.replace(/\s/g,'').length;if(len>=6&&len<=12)score+=1;if(!/[0-9]/.test(name))score+=.5;if(name.split(/\s+/).length<=2)score+=.5;return Math.min(9.5,score).toFixed(1)}
     function nameReason(name){const parts=[];if(name.length<15)parts.push('krótka');if(name.split(/\s+/).length<=2)parts.push('łatwa do zapamiętania');parts.push('nadaje się do logo i domeny');return parts.join(', ')}
     function offerNameSuggestion(forceAlternative=false){chat.phase='naming';chat.needsName=true;const list=nameTokens(chat.data.industry);const idx=(chat.nameRound++)%list.length;let proposed=list[idx];if(proposed===chat.lastSuggestedName)proposed=list[(idx+1)%list.length];chat.lastSuggestedName=proposed;ai(`<div class="nameProposal"><span class="nameScore">Ocena marketingowa demo: ${scoreName(proposed)}/10</span><strong>${esc(proposed)}</strong><p>${esc(nameReason(proposed))}. To jest ocena heurystyczna BeeFlow — prawdziwe sprawdzenie konkurencji, domen i znaków towarowych dołączymy po podpięciu backendu.</p></div>`,true);setTimeout(()=>addChips(['Tak, ta nazwa pasuje','Pokaż inną nazwę','Wpiszę własną nazwę'],handleNameChoice),200)}
     function handleNameChoice(choice){if(/tak/i.test(choice)){confirmValue('company',chat.lastSuggestedName);return}if(/inną/i.test(choice)){offerNameSuggestion(true);return}chat.phase='naming-custom';ai('Jasne. Wpisz własną nazwę firmy — zatrzymam się na tym kroku, dopóki jej nie zaakceptujesz.')}
+
+    function looksLikeBusinessDescription(t=''){const x=String(t).trim();return x.split(/\s+/).length>=3&&/^(zajmuję|zajmuje|zajmujemy|prowadzę|prowadze|prowadzimy|firma|oferuję|oferuje|oferujemy|robimy|wykonuję|wykonuje|wykonujemy|sprowadzam|sprowadzamy|sprzedaję|sprzedaje|sprzedajemy)\b/i.test(x)}
+    function confirmDetectedIndustry(){
+      chat.phase='industry-confirm';
+      const label=chat.data.industry||'Nie jestem jeszcze pewien branży';
+      ai(`<div class="chatSummary"><b>Najpierw upewnijmy się, że dobrze rozumiem firmę:</b><br>Branża: <b>${esc(label)}</b><span class="smartHint">Dopiero po potwierdzeniu zaproponuję nazwę.</span></div>`,true);
+      setTimeout(()=>addChips(['Tak, dokładnie','Nie — popraw branżę'],choice=>{bubble(choice,'user');if(/^Tak/i.test(choice)){offerNameSuggestion();return}chat.phase='industry-manual';ai('Napisz proszę w 2–6 słowach, czym dokładnie zajmuje się firma, np. „import i sprzedaż samochodów”, „salon paznokci”, „serwis rowerowy”.')}),180)
+    }
+
 
     function detectGlobalCorrection(t){const x=t.toLowerCase();if(/inna\s+nazwa|zmień\s+nazw|zmien\s+nazw|nie.*nazwa/.test(x)){chat.nameRound++;offerNameSuggestion(true);return true}const map=[['miast','city'],['obszar','city'],['usług','services'],['styl','style'],['telefon','phone'],['mail','email'],['e-mail','email'],['wyróż','usp'],['branż','industry']];for(const [needle,key] of map){if((x.includes('zmień')||x.includes('zmien')||x.includes('popraw'))&&x.includes(needle)){chat.phase='ask';chat.pendingKey=key;chat.step=Math.max(0,questions.findIndex(q=>q.key===key));ai(`Okej — wracamy do pola „${fieldLabel(key)}”. Podaj nową wersję.`);return true}}return false}
 
@@ -80,8 +89,10 @@ const msgs=document.getElementById('msgs');
 
     function submitMessage(text){const t=(text??inp.value).trim();if(!t)return;bubble(t,'user');inp.value='';if(detectGlobalCorrection(t))return;
       if(chat.phase==='confirm'){if(isYes(t)){handleConfirmation('yes');return}if(isNo(t)){handleConfirmation('no');return}chat.pendingValue=sanitizeValue(chat.pendingKey,t);confirmValue(chat.pendingKey,chat.pendingValue);return}
-      if(chat.phase==='naming'){if(/inna|inny|kolejn|bardziej|coś|cos|propozycj|jeszcze/.test(t.toLowerCase())){offerNameSuggestion(true);return}if(isYes(t)){confirmValue('company',chat.lastSuggestedName);return}confirmValue('company',t);return}
-      if(chat.phase==='naming-custom'){confirmValue('company',t);return}
+      if(chat.phase==='industry-confirm'){if(isYes(t)){offerNameSuggestion();return}if(isNo(t)){chat.phase='industry-manual';ai('Jasne. Napisz w 2–6 słowach, czym dokładnie zajmuje się firma.');return}chat.data.industry=deriveIndustryLabel(t);confirmDetectedIndustry();return}
+      if(chat.phase==='industry-manual'){chat.data.industry=deriveIndustryLabel(t);confirmDetectedIndustry();return}
+      if(chat.phase==='naming'){if(/inna|inny|kolejn|bardziej|coś|cos|propozycj|jeszcze/.test(t.toLowerCase())){offerNameSuggestion(true);return}if(isYes(t)){confirmValue('company',chat.lastSuggestedName);return}if(looksLikeBusinessDescription(t)){chat.data.businessBrief=(chat.data.businessBrief?chat.data.businessBrief+'; ':'')+t;chat.data.industry=deriveIndustryLabel(t);ai('To wygląda jak opis działalności, a nie nazwa firmy. Nie zapiszę tego jako nazwy — wykorzystam to do lepszego rozpoznania branży.');setTimeout(confirmDetectedIndustry,160);return}confirmValue('company',t);return}
+      if(chat.phase==='naming-custom'){if(looksLikeBusinessDescription(t)){ai('To nadal wygląda jak opis działalności. Wpisz proszę samą nazwę firmy, np. „AutoSelect”.');return}confirmValue('company',t);return}
       if(chat.phase==='extras'){handleExtraAnswer(t);return}
       handleAskAnswer(t)}
     form.addEventListener('submit',e=>{e.preventDefault();submitMessage();requestAnimationFrame(()=>{inp.focus({preventScroll:true});msgs.scrollTop=msgs.scrollHeight})});
@@ -168,6 +179,11 @@ const msgs=document.getElementById('msgs');
     function siteCopy(d){
       const cat=categoryKey(d), n=hashString(`${d.company||''}|${d.city||''}|sections`)%3;
       const packs={
+        cartrade:[
+          {servicesTitle:'Import auta krok po kroku',servicesLead:'Od określenia budżetu po sprowadzenie i odbiór samochodu.',ctaTitle:'Szukasz konkretnego auta?',ctaLead:'Napisz model, budżet i najważniejsze wymagania.',contactTitle:'Zacznijmy od auta, którego szukasz',contactLead:'Kilka informacji wystarczy, żeby rozpocząć rozmowę.'},
+          {servicesTitle:'Samochód dobrany do Ciebie',servicesLead:'Nie zaczynamy od przypadkowej oferty — najpierw ustalamy wymagania.',ctaTitle:'Chcesz sprowadzić auto?',ctaLead:'Powiedz czego szukasz i jaki masz budżet.',contactTitle:'Porozmawiajmy o imporcie',contactLead:'Zostaw kontakt i podstawowe wymagania.'},
+          {servicesTitle:'Od wyboru do odbioru',servicesLead:'Jasne etapy importu i jeden kontakt przez cały proces.',ctaTitle:'Masz już wybrany model?',ctaLead:'Sprawdźmy, jak podejść do zakupu.',contactTitle:'Sprawdź możliwości',contactLead:'Napisz, jakiego samochodu szukasz.'}
+        ],
         greenhouse:[
           {servicesTitle:'Szklarnia dopasowana do Twojego ogrodu',servicesLead:'Konstrukcja, poliwęglan i sposób montażu dobrane do Twojej przestrzeni.',ctaTitle:'Masz miejsce na szklarnię?',ctaLead:'Podaj wymiary ogrodu i oczekiwany rozmiar. Dobierzemy rozwiązanie.',contactTitle:'Wyceń swoją szklarnię',contactLead:'Napisz, jakiej wielkości szklarni potrzebujesz i czy chcesz montaż.'},
           {servicesTitle:'Od konstrukcji do gotowej szklarni',servicesLead:'Możemy wykonać całość albo przygotować zestaw do samodzielnego montażu.',ctaTitle:'Chcesz wydłużyć sezon w ogrodzie?',ctaLead:'Powiedz, ile masz miejsca i co chcesz uprawiać.',contactTitle:'Porozmawiajmy o szklarni',contactLead:'Kilka wymiarów i krótki opis wystarczą na start.'},
@@ -216,22 +232,28 @@ const msgs=document.getElementById('msgs');
     function domainIdeas(d){const base=slugify(d.company);const city=slugify(d.city);return [...new Set([`${base}.pl`,city?`${base}-${city}.pl`:null,`${base}24.pl`].filter(Boolean))]}
     function photoCaption(d,i){const services=normalizeServices(d.services||'');const label=services[i%Math.max(services.length,1)]||'Realizacja';return `${label} • ${d.city||d.company||'realizacja'}`}
 
-    // ===== BeeFlow v9: krótki, sprzedażowy copy engine =====
+    // ===== BeeFlow v11.1: bezpieczniejsza analiza branży + nazewnictwo =====
     function businessContext(d=chat.data){return [d.businessBrief,d.industry,d.services,d.usp].filter(Boolean).join(' ').toLowerCase()}
     function deriveIndustryLabel(text=''){
-      const x=String(text).toLowerCase();
+      const raw=String(text).trim(), x=raw.toLowerCase();
+      if(/sprowadz|import(ujemy|uję|uje)? .*?(aut|samoch)|samochod.*z zagran|auta.*z zagran|handel.*(aut|samoch)|sprzedaż.*(aut|samoch)|sprzedaz.*(aut|samoch)|komis samoch/.test(x))return 'Import i sprzedaż samochodów';
       if(/szklar|poliwęgl|poliwegl|greenhouse|tunel ogrod/.test(x))return 'Szklarnie ogrodowe';
       if(/bram|ogrodz|furt/.test(x))return 'Bramy i ogrodzenia';
-      if(/detail|auto|samoch|lakier|ceram|poler/.test(x))return 'Detailing samochodowy';
+      if(/detail|auto detailing|detailing samoch|korekt.*lakier|powłok.*ceram|powlok.*ceram|poler.*lakier/.test(x))return 'Detailing samochodowy';
       if(/stomatolog|dentyst|gabinet stomat|higieniz|leczenie kanał|kanalow|wybielanie zęb|wybielanie zeb/.test(x))return 'Stomatologia';
       if(/budowl|remont|wykończ|wykoncz|elewac|murarsk/.test(x))return 'Usługi budowlane';
       if(/fryz|beauty|kosmet|paznok|manicure|brwi|rzęs|rzes|makija/.test(x))return 'Beauty';
       if(/transport|przeprowad|kurier|dostaw/.test(x))return 'Transport';
-      if(/hydraul|instalac|wod-kan|ogrzew/.test(x))return 'Hydraulika i instalacje';
+      if(/hydraul|wod-kan|ogrzew/.test(x))return 'Hydraulika i instalacje';
       if(/elektryk|elektrycz|instalacja elek/.test(x))return 'Usługi elektryczne';
       if(/klimatyz|wentyl/.test(x))return 'Klimatyzacja i wentylacja';
       if(/sprząt|sprzatan|clean/.test(x))return 'Usługi sprzątające';
-      const words=String(text).replace(/[^\p{L}\p{N} ]/gu,' ').trim().split(/\s+/).filter(Boolean).slice(0,4);
+      if(/mechanik|warsztat samoch|napraw.*samoch|serwis samoch/.test(x))return 'Serwis samochodowy';
+      if(/serwis rower|napraw.*rower|rowerow/.test(x))return 'Serwis rowerowy';
+      if(/fotograf|sesj.*zdję|sesj.*zdjec/.test(x))return 'Fotografia';
+      if(/księg|ksieg|rachunk/.test(x))return 'Księgowość';
+      const cleaned=raw.replace(/^(zajmuję się|zajmuje się|zajmujemy się|prowadzę|prowadze|prowadzimy|moja firma|firma|oferuję|oferuje|oferujemy)\s+/i,'').replace(/[.,;:!?]+$/g,'').trim();
+      const words=cleaned.replace(/[^\p{L}\p{N} -]/gu,' ').split(/\s+/).filter(Boolean).slice(0,6);
       return words.length?words.join(' '):'Profesjonalne usługi';
     }
     function industryLabel(industry=''){return deriveIndustryLabel(industry)}
@@ -261,9 +283,10 @@ const msgs=document.getElementById('msgs');
     }
     function categoryKey(d=chat.data){
       const x=businessContext(d);
+      if(/import|sprowadz|sprzedaż samoch|sprzedaz samoch|handel aut|komis samoch|samochod.*z zagran/.test(x))return 'cartrade';
       if(/szklar|poliwęgl|poliwegl|greenhouse|tunel ogrod/.test(x))return 'greenhouse';
       if(/bram|ogrodz|furt/.test(x))return 'gates';
-      if(/detail|auto|samoch|lakier|ceram|poler/.test(x))return 'auto';
+      if(/detail|auto detailing|lakier|ceram|poler/.test(x))return 'auto';
       if(/stomatolog|dentyst|gabinet stomat|higieniz|leczenie kanał|kanalow|wybielanie zęb|wybielanie zeb/.test(x))return 'dental';
       if(/budowl|remont|wykończ|wykoncz|elewac|murarsk/.test(x))return 'build';
       if(/fryz|beauty|kosmet|paznok|manicure|brwi|rzęs|rzes/.test(x))return 'beauty';
@@ -275,6 +298,7 @@ const msgs=document.getElementById('msgs');
     function heroTitle(d){
       if((d.headline||'').trim())return d.headline.trim();
       const cat=categoryKey(d), variants={
+        cartrade:['Auta z importu. Bez zgadywania.','Znajdź auto, które naprawdę ma sens.','Import samochodów z konkretnym planem.'],
         greenhouse:['Szklarnia dopasowana do Twojego ogrodu.','Więcej sezonu. Więcej zbiorów.','Solidna konstrukcja. Jasny montaż.','Twoja szklarnia — gotowa na kolejne sezony.'],
         gates:['Brama na wymiar. Bez kompromisów.','Od pomiaru do gotowej bramy.','Twój wjazd. Nasza stal. Gotowy efekt.','Bramy, które naprawdę pasują do posesji.'],
         auto:['Auto, które znów robi wrażenie.','Efekt widać od pierwszego spojrzenia.','Czysto. Głęboko. Zabezpieczone.'],
@@ -288,6 +312,7 @@ const msgs=document.getElementById('msgs');
     }
     function heroLead(d){
       const cat=categoryKey(d), area=areaCopy(d), f=businessFeatures(d);
+      if(cat==='cartrade')return `Pomagamy znaleźć, sprowadzić i przygotować samochód zgodnie z ustalonym budżetem i oczekiwaniami. ${area}.`;
       if(cat==='greenhouse')return `Szklarnie z poliwęglanu przygotowane pod konkretny ogród i sposób użytkowania. ${area}.`;
       if(cat==='gates'){
         if(f.includes('Własna produkcja'))return `Mierzymy, projektujemy i wykonujemy u siebie. ${area}.`;
@@ -302,6 +327,9 @@ const msgs=document.getElementById('msgs');
     }
     function serviceDesc(name,industry=''){
       const n=String(name).toLowerCase(), ctx=(n+' '+String(industry).toLowerCase());
+      if(/sprowadz|import/.test(n))return 'Szukamy i sprowadzamy samochód zgodnie z ustalonym budżetem, wymaganiami i kierunkiem zakupu.';
+      if(/sprzedaż|sprzedaz|dobór auta|dobor auta|wyszukiwanie auta/.test(n)&&/samoch|aut/.test(ctx))return 'Pomagamy dobrać samochód do potrzeb i jasno przejść przez kolejne etapy zakupu.';
+      if(/weryfik|sprawdzen/.test(n)&&/samoch|aut/.test(ctx))return 'Sprawdzamy najważniejsze informacje o aucie przed decyzją, żeby ograniczyć ryzyko nietrafionego zakupu.';
       if(/szklar|poliwęgl|poliwegl/.test(n))return 'Przygotowujemy konstrukcję i poszycie tak, żeby szklarnia była trwała, praktyczna i łatwa w użytkowaniu.';
       if(/konserw/.test(n)&&/szklar|poliwęgl|poliwegl/.test(ctx))return 'Sprawdzamy konstrukcję, łączenia i poszycie, żeby szklarnia była gotowa na kolejny sezon.';
       if(/samodziel|skręc|skrec/.test(n))return 'Przygotowujemy komplet elementów do samodzielnego montażu z czytelnym podziałem i dopasowaniem części.';
@@ -334,6 +362,7 @@ const msgs=document.getElementById('msgs');
     }
     function aboutCopy(d){
       const cat=categoryKey(d), f=businessFeatures(d), area=areaCopy(d), name=d.company||'Nasza firma';
+      if(cat==='cartrade')return `${name} zajmuje się importem i sprzedażą samochodów. Pomagamy przejść od wyboru auta do jego sprowadzenia i przygotowania do odbioru. ${area}.`;
       if(cat==='greenhouse')return `${name} wykonuje szklarnie ogrodowe z poliwęglanu — od przygotowania konstrukcji po gotowy zestaw lub montaż. ${area}.`;
       if(cat==='gates'){
         const own=f.includes('Własna produkcja')?' Własna produkcja daje nam kontrolę nad każdym etapem.':'';
@@ -348,6 +377,7 @@ const msgs=document.getElementById('msgs');
     }
     function trustItems(d){
       const cat=categoryKey(d), f=businessFeatures(d), area=areaCopy(d);
+      if(cat==='cartrade')return [['Dobór auta','Szukamy samochodu pod budżet i konkretne wymagania'],['Jasny proces','Wiesz, co dzieje się na każdym etapie importu'],['Kontakt','Masz jedno miejsce do ustaleń od początku do odbioru']];
       if(cat==='greenhouse')return [['Dopasowanie do ogrodu','Rozmiar i konstrukcja pod konkretną przestrzeń'],['Poliwęglan i konstrukcja','Materiały dobrane do codziennego użytkowania'],['Elastyczny montaż','Montaż przez nas lub przygotowanie zestawu do samodzielnego skręcenia']];
       if(cat==='gates')return [[f.includes('Pomiar i wykonanie pod wymiar')?'Pod wymiar':'Dopasowanie','Nie z katalogu — pod konkretny wjazd'],[f.includes('Własna produkcja')?'Własna produkcja':'Pewny proces','Kontrola od stali do montażu'],['Lokalnie',area]];
       if(cat==='auto')return [['Dobór zakresu','Tylko to, czego auto naprawdę potrzebuje'],['Detal','Efekt widać z bliska'],['Termin','Szybkie i jasne ustalenie']];
@@ -357,6 +387,7 @@ const msgs=document.getElementById('msgs');
     }
     function whyCards(d){
       const f=businessFeatures(d), cat=categoryKey(d), cards=[];
+      if(cat==='cartrade')return [['Auto pod wymagania','Nie zaczynamy od przypadkowej oferty — najpierw ustalamy, czego szukasz.'],['Weryfikacja przed zakupem','Sprawdzamy kluczowe informacje przed podjęciem decyzji.'],['Jasne etapy','Od wyboru auta po odbiór wiesz, co dzieje się dalej.'],['Kontakt w jednym miejscu','Nie musisz samodzielnie składać całego procesu z kilku usług.']];
       if(cat==='dental')return [['Spokojna wizyta','Dbamy o komfort i jasną komunikację od pierwszego kontaktu.'],['Zrozumiały plan','Wyjaśniamy możliwe rozwiązania i kolejne kroki leczenia.'],['Nowoczesne podejście','Diagnostykę i leczenie dobieramy do konkretnej sytuacji.'],['Profilaktyka','Pomagamy dbać o zdrowie jamy ustnej również między wizytami.']];
       if(cat==='beauty')return [['Indywidualny efekt','Najpierw ustalamy, jaki rezultat chcesz uzyskać.'],['Higiena','Dbamy o czystość stanowiska i bezpieczne przygotowanie narzędzi.'],['Spokojna atmosfera','Wizyta ma być przyjemna, nie pośpieszna.'],['Estetyka','Liczy się dopracowany efekt, który pasuje do Ciebie.']];
       if(cat==='greenhouse')return [['Dopasowana konstrukcja','Rozmiar i układ dobieramy do konkretnego ogrodu.'],['Poliwęglan','Lekka i praktyczna osłona do wydłużenia sezonu.'],['Opcja samodzielnego montażu','Możemy przygotować komplet elementów do skręcenia przez klienta.'],['Wsparcie po zakupie','Pomagamy również przy konserwacji i dalszej eksploatacji.']];
@@ -373,11 +404,11 @@ const msgs=document.getElementById('msgs');
     function fieldLabel(key){return ({company:'nazwa firmy',businessBrief:'opis firmy do analizy',industry:'branża / kategoria',city:'obszar działania',services:'usługi',style:'styl strony',usp:'wyróżnik firmy',phone:'telefon',email:'e-mail'})[key]||key}
     function commitPending(){
       const key=chat.pendingKey,value=chat.pendingValue;
-      if(key==='businessBrief'){chat.data.businessBrief=value;chat.data.industry=deriveIndustryLabel(value)}else chat.data[key]=value;
+      if(key==='businessBrief'){chat.data.businessBrief=value;chat.data.industry=deriveIndustryLabel(value)}else if(key==='industry'){chat.data.industry=deriveIndustryLabel(value)}else chat.data[key]=value;
       chat.pendingKey=null;chat.pendingValue='';chat.phase='ask';
       const advancesCurrent=questions[chat.step]&&questions[chat.step].key===key;if(advancesCurrent)chat.step++;
       if(key==='company')chat.needsName=false;
-      if(key==='businessBrief'&&chat.needsName){setTimeout(offerNameSuggestion,180);return}
+      if((key==='businessBrief'||key==='industry')&&chat.needsName){setTimeout(confirmDetectedIndustry,180);return}
       if(chat.step>=questions.length){setTimeout(startExtras,180);return}
       setTimeout(askCurrent,180)
     }
