@@ -1,4 +1,4 @@
-// BeeFlow v11.2 chat hotfix — childcare + cache-safe deploy
+// BeeFlow v12 stable — QA, bezpieczniejszy kreator i odporność na literówki
 const msgs=document.getElementById('msgs');
     const form=document.getElementById('chatForm');
     const inp=document.getElementById('chatInput');
@@ -45,30 +45,129 @@ const msgs=document.getElementById('msgs');
     if(location.hash==='#chatbox')setTimeout(()=>openMainChat(document.querySelector('.js-open-chat')),80);
     const questions=(window.BEEFLOW_CONFIG&&window.BEEFLOW_CONFIG.questions)||[];
 
-    const chat={started:false,step:0,phase:'ask',pendingKey:null,pendingValue:'',needsName:false,nameRound:0,lastSuggestedName:'',extraRound:0,data:{company:'',businessBrief:'',industry:'',city:'',services:'',style:'',usp:'',headline:'',phone:'',email:'',logo:'',logoMode:'none',logoSeed:0,photos:[],projectPhotos:[],extras:[],extraNotes:'',projectsEnabled:false}};
+    const chat={started:false,step:0,phase:'ask',pendingKey:null,pendingValue:'',needsName:false,nameRound:0,lastSuggestedName:'',extraRound:0,industryConfirmed:false,industryConfidence:0,industrySource:'',data:{company:'',businessBrief:'',industry:'',city:'',services:'',style:'',usp:'',headline:'',phone:'',email:'',logo:'',logoMode:'none',logoSeed:0,photos:[],projectPhotos:[],extras:[],extraNotes:'',projectsEnabled:false}};
 
     function esc(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
     function bubble(text,who='ai',html=false){const d=document.createElement('div');d.className='bubble '+who;if(html)d.innerHTML=text;else d.textContent=text;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight}
     function ai(text,html=false){setTimeout(()=>bubble(text,'ai',html),120)}
     function updateProgress(){const total=questions.length;const done=Math.min(chat.step,total);progressFill.style.width=((done/total)*100)+'%';progressText.textContent=chat.phase==='extras'?'Podstawowe dane zebrane — dodatki':chat.phase==='upload'?'Dane zebrane — materiały':chat.step>=total?'Podstawowe dane zebrane':`Krok ${Math.min(chat.step+1,total)} z ${total}`}
-    function initChat(){if(chat.started){setTimeout(()=>inp.focus(),100);return}chat.started=true;msgs.innerHTML='';bubble('Cześć 👋 Jestem kreatorem BeeFlow AI. Nie będę tylko leciał pytanie po pytaniu — po każdej ważnej odpowiedzi upewnię się, że dobrze Cię zrozumiałem.','ai');setTimeout(()=>askCurrent(),180)}
+    function initChat(){
+  if(chat.started){setTimeout(()=>inp.focus(),100);return}
+  chat.started=true;msgs.innerHTML='';
+  bubble('Cześć 👋 Jestem kreatorem strony demo. Możesz pisać normalnymi zdaniami — jeśli czegoś nie będę pewien, zapytam zamiast zgadywać. Literówki też nie powinny wykoleić rozmowy.','ai');
+  setTimeout(()=>askCurrent(),180)
+}
     function addChips(items,handler){const q=document.createElement('div');q.className='quick';items.forEach(item=>{const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=item;b.onclick=()=>handler?handler(item):submitMessage(item);q.appendChild(b)});msgs.appendChild(q);msgs.scrollTop=msgs.scrollHeight}
     function addConfirmButtons(){const row=document.createElement('div');row.className='confirmRow';[['Tak, zgadza się','yes','primary'],['Chcę poprawić','no','']].forEach(([txt,val,cls])=>{const b=document.createElement('button');b.type='button';b.className='confirmBtn '+cls;b.textContent=txt;b.onclick=()=>handleConfirmation(val);row.appendChild(b)});msgs.appendChild(row);msgs.scrollTop=msgs.scrollHeight}
-    function normalizeServices(raw){return raw.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean).slice(0,8)}
-    function fieldLabel(key){return ({company:'nazwa firmy',industry:'branża / zakres działalności',city:'obszar działania',services:'usługi',style:'styl strony',usp:'wyróżnik firmy',phone:'telefon',email:'e-mail'})[key]||key}
+    function normalizeServices(raw=''){
+  const text=String(raw).replace(/\s+/g,' ').trim();
+  if(!text)return [];
+  let items=text.split(/[,;\n•]+/).map(x=>x.trim()).filter(Boolean);
+  if(items.length===1 && /\s+(?:oraz|i)\s+/i.test(text) && text.length<120){
+    const split=text.split(/\s+(?:oraz|i)\s+/i).map(x=>x.trim()).filter(Boolean);
+    if(split.length>1 && split.length<=6)items=split;
+  }
+  return [...new Set(items)].slice(0,8)
+}
+    
     function fieldSummary(key,value){if(key==='services')return normalizeServices(value).join(' • ');if(key==='usp'&&!value)return 'bez dodatkowego wyróżnika';if(key==='email'&&!value)return 'e-mail ukryty';return value}
-    function intentText(t=''){return String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim()}
+    function intentText(t=''){
+  return String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim()
+}
     function editDistance(a='',b=''){a=String(a);b=String(b);const dp=Array.from({length:a.length+1},()=>Array(b.length+1).fill(0));for(let i=0;i<=a.length;i++)dp[i][0]=i;for(let j=0;j<=b.length;j++)dp[0][j]=j;for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return dp[a.length][b.length]}
-    function isYes(t){const x=intentText(t);if(/^(tak|zgadza|zgadza sie|ok|okej|dobrze|zostaw|pasuje|ta odpowiada|moze byc|super)/.test(x))return true;return x.length<=4&&['tak','tka'].some(v=>editDistance(x,v)<=1)}
-    function isNo(t){const x=intentText(t);if(/^(nie|inna|inny|zmien|popraw|nie pasuje|nie odpowiada)/.test(x))return true;return x.length<=4&&['nie','nei'].some(v=>editDistance(x,v)<=1)}
+
+const INDUSTRY_PROFILES={
+  childcare:{label:'Opieka nad dziećmi',names:['MaliRazem','TuliMiejsce','DobryStart','BliskoDziecka','MaliOdkrywcy','TęczowyKącik']},
+  cartrade:{label:'Import i sprzedaż samochodów',names:['AutoSelect','MotoSource','CarBridge','AutoPort','DriveSelect','MotoPrime']},
+  greenhouse:{label:'Szklarnie ogrodowe',names:['GreenForma','PolyGarden','GardenFrame','VitaGlass','GreenNest','OgroForma']},
+  gates:{label:'Bramy i ogrodzenia',names:['StalForma','BramaLab','StalPoint','ForgeLine','SolidGate','MetalForma']},
+  auto:{label:'Detailing samochodowy',names:['DetailForge','AutoGlow','PrimeDetail','ShineLab','DetailPoint','AutoForma']},
+  dental:{label:'Stomatologia',names:['DentaNova','SmilePoint','NovaDent','DentCare','DentAura','WhiteDent']},
+  build:{label:'Usługi budowlane i remontowe',names:['SolidDom','BuildForma','ProConstruct','DomPoint','FormaBud','BuildLab']},
+  beauty:{label:'Beauty i kosmetyka',names:['AuraStudio','PureLine','NovaBeauty','GlowRoom','FormaBeauty','LunaStudio']},
+  transport:{label:'Transport i przeprowadzki',names:['MovePoint','CargoFlow','TransForma','RoutePro','FastLine','MoveLab']},
+  plumbing:{label:'Hydraulika i instalacje',names:['HydroPoint','AquaSerwis','InstalPro','HydroForma','AquaTech','FlowSerwis']},
+  electrical:{label:'Usługi elektryczne',names:['VoltPoint','ElektroForma','VoltLab','InstalVolt','ElektroPro','PowerLine']},
+  hvac:{label:'Klimatyzacja i wentylacja',names:['ClimaPoint','AirForma','ClimaPro','AirFlow Tech','ClimaLab','FreshAir']},
+  cleaning:{label:'Usługi sprzątające',names:['CleanPoint','PureHome','CleanForma','FreshSpace','CzystyKąt','CleanLab']},
+  autoservice:{label:'Serwis samochodowy',names:['MotoSerwis','AutoPoint','GaragePro','MotoLab','AutoCare','DriveSerwis']},
+  bicycle:{label:'Serwis rowerowy',names:['BikePoint','VeloSerwis','BikeLab','VeloPro','Rowerownia','VeloPoint']},
+  photo:{label:'Fotografia',names:['FrameStudio','KadrPoint','LumaFoto','KadrLab','FotoForma','LumeStudio']},
+  accounting:{label:'Księgowość',names:['SaldoPro','KontoForma','BilansPoint','SaldoLab','KsięgaPro','FinForma']},
+  pet:{label:'Usługi dla zwierząt',names:['PupilPoint','PetCare','PupilLab','PetForma','HappyPet','PupilPro']},
+  food:{label:'Gastronomia',names:['SmakPoint','BistroForma','DobrySmak','FoodLab','Smakownia','BistroPro']},
+  fitness:{label:'Trening i fitness',names:['FormaLab','FitPoint','MoveFit','CoreStudio','FitForma','ActiveLab']}
+};
+
+function tokenNear(token,target,maxDistance){
+  if(!token||!target)return false;
+  if(token.startsWith(target)||target.startsWith(token))return Math.min(token.length,target.length)>=4;
+  return Math.abs(token.length-target.length)<=maxDistance && editDistance(token,target)<=maxDistance
+}
+function hasNearToken(text,targets,maxDistance=1){
+  const tokens=intentText(text).split(' ').filter(Boolean);
+  return targets.some(target=>tokens.some(token=>tokenNear(token,target,maxDistance)))
+}
+function hasAny(text,terms){const x=intentText(text);return terms.some(t=>x.includes(intentText(t)))}
+function detectIndustry(text=''){
+  const raw=String(text),x=intentText(raw),tokens=x.split(' ').filter(Boolean);
+  const has=(...terms)=>terms.some(t=>x.includes(t));
+  const near=(...terms)=>terms.some(t=>tokens.some(tok=>tokenNear(tok,t,t.length>=8?2:1)));
+  const pair=(a,b)=>a&&b;
+  const car=tokens.some(tok=>['aut','auta','auto','samochod','samochody','samochodu','pojazd','pojazdy'].includes(tok))||has('samoch','pojazd')||near('samochod','pojazd');
+  const kids=has('dziec','dziecko','dzieci','rodzic','maluch')||near('dziecmi','dziecko','rodzice','maluchy');
+
+  if(pair(kids,has('opieka','opiekuj','nian','zlob','przedszkol','pilnuj','zajecia')||near('opiekujemy','opiekuje','niania','przedszkole')))return {key:'childcare',label:INDUSTRY_PROFILES.childcare.label,confidence:.98};
+  if(has('zlob','przedszkol','klub malucha','niania','babysit'))return {key:'childcare',label:INDUSTRY_PROFILES.childcare.label,confidence:.96};
+  if(pair(car,has('import','sprowadz','zagran','komis','handel','sprzedaz')||near('sprowadzamy','sprowadzaniem','importujemy')))return {key:'cartrade',label:INDUSTRY_PROFILES.cartrade.label,confidence:.97};
+  if(has('szklarn','poliwegl','greenhouse','tunel ogrod'))return {key:'greenhouse',label:INDUSTRY_PROFILES.greenhouse.label,confidence:.99};
+  if(has('bram','ogrodzen','furt','wjazdowa') || pair(has('spaw','stal'),has('bram','ogrodzen','furt')))return {key:'gates',label:INDUSTRY_PROFILES.gates.label,confidence:.97};
+  if(has('detail','powleka ceramic','powloka ceramic','korekta lakier','polerowanie lakier')||pair(car,has('ceram','poler','detailing')))return {key:'auto',label:INDUSTRY_PROFILES.auto.label,confidence:.96};
+  if(has('stomatolog','dentyst','gabinet dent','gabinet stomat','higieniz','leczenie kanal','wybielanie zeb'))return {key:'dental',label:INDUSTRY_PROFILES.dental.label,confidence:.99};
+  if(has('paznok','manicure','pedicure','rzesa','rzesy','brwi','kosmetycz','beauty','makijaz','fryzjer'))return {key:'beauty',label:INDUSTRY_PROFILES.beauty.label,confidence:.98};
+  if(has('hydraul','wod kan','instalacje wod','ogrzewanie podlog','piec gaz'))return {key:'plumbing',label:INDUSTRY_PROFILES.plumbing.label,confidence:.98};
+  if(has('elektryk','instalacje elek','elektryczne','rozdzieln','gniazdka'))return {key:'electrical',label:INDUSTRY_PROFILES.electrical.label,confidence:.98};
+  if(has('klimatyz','wentylac','rekuperac'))return {key:'hvac',label:INDUSTRY_PROFILES.hvac.label,confidence:.98};
+  if(has('sprzatan','sprzatam','sprzataj','cleaning','mycie okien'))return {key:'cleaning',label:INDUSTRY_PROFILES.cleaning.label,confidence:.97};
+  if(has('mechanik','warsztat samoch','serwis samoch','naprawa samoch','naprawiam auta'))return {key:'autoservice',label:INDUSTRY_PROFILES.autoservice.label,confidence:.97};
+  if(has('serwis rower','naprawa rower','rowerowy','rowery napraw'))return {key:'bicycle',label:INDUSTRY_PROFILES.bicycle.label,confidence:.97};
+  if(has('fotograf','fotografia','sesje zdjec','sesja zdjec'))return {key:'photo',label:INDUSTRY_PROFILES.photo.label,confidence:.98};
+  if(has('ksiegow','rachunkow','biuro rachunk','podatki firm'))return {key:'accounting',label:INDUSTRY_PROFILES.accounting.label,confidence:.98};
+  if(has('przeprowadz','kurier','transport','przewoz','dostawy'))return {key:'transport',label:INDUSTRY_PROFILES.transport.label,confidence:.93};
+  if(has('weteryn','groomer','strzyzenie ps','hotel dla ps','opieka nad psem','opieka nad zwierz'))return {key:'pet',label:INDUSTRY_PROFILES.pet.label,confidence:.96};
+  if(has('restaurac','pizzeria','catering','bistro','kawiarnia','gastronom'))return {key:'food',label:INDUSTRY_PROFILES.food.label,confidence:.97};
+  if(has('trener personal','silownia','fitness','trening personal','studio trening'))return {key:'fitness',label:INDUSTRY_PROFILES.fitness.label,confidence:.97};
+
+  // Budowlanka celowo wymaga kontekstu, żeby „budujemy zaufanie” nie robiło firmy budowlanej.
+  const buildWord=has('remont','wykonczen','elewac','murars','tynkar','posadzk','budowl')||near('remonty','wykonczenia','budowlane');
+  const buildContext=has('dom','mieszkan','lokal','scian','dach','elewac','lazien','kuchni','fundament','taras');
+  if(buildWord || has('budowa domu','budowa domow') || (has('buduj','budowa')&&buildContext))return {key:'build',label:INDUSTRY_PROFILES.build.label,confidence:.94};
+
+  return {key:'general',label:'',confidence:0}
+}
+function manualIndustryLabel(text=''){
+  let cleaned=String(text).trim().replace(/[.,;:!?]+$/g,'').replace(/\s+/g,' ');
+  cleaned=cleaned.replace(/^(moja branża to|moja branza to|branża to|branza to|zajmujemy się|zajmujemy sie|zajmuję się|zajmuje sie|prowadzę|prowadze|prowadzimy)\s+/i,'').trim();
+  const words=cleaned.split(' ').filter(Boolean).slice(0,7);
+  if(!words.length)return 'Usługi lokalne';
+  const v=words.join(' ');
+  return v.charAt(0).toUpperCase()+v.slice(1)
+}
+
+    function isYes(t){const x=intentText(t);if(/^(tak|zgadza sie|zgadza|dokladnie|ok|okej|dobrze|zostaw|pasuje|ta odpowiada|moze byc|super|jasne)\b/.test(x))return true;return x.length<=5&&['tak','tka','okej'].some(v=>editDistance(x,v)<=1)}
+    function isNo(t){const x=intentText(t);if(/^(nie|inna|inny|zmien|popraw|nie pasuje|nie odpowiada|zle)\b/.test(x))return true;return x.length<=4&&['nie','nei'].some(v=>editDistance(x,v)<=1)}
     function isNoName(t){
-      const x=intentText(t);
-      if(!x)return false;
-      if(/^(brak nazwy|bez nazwy|nie mam nazwy|nie ma nazwy|nie mamy nazwy|nie posiadam nazwy|nie posiadamy nazwy|nie mam jeszcze nazwy|jeszcze nie mam nazwy)$/.test(x))return true;
-      const compact=x.replace(/\s+/g,'');
-      const variants=['braknazwy','beznazwy','niemamnazwy','niemanazwy','niemamynazwy','nieposiadamnazwy','nieposiadamynazwy','niemamjeszczenazwy','jeszczeniemamnazwy'];
-      return variants.some(v=>Math.abs(v.length-compact.length)<=2&&editDistance(compact,v)<=2);
-    }
+  const x=intentText(t);if(!x)return false;
+  if(/\b(mam|mamy|posiadam|posiadamy)\b/.test(x) && !/\bnie\b/.test(x))return false;
+  const compact=x.replace(/\s+/g,'');
+  const variants=['braknazwy','beznazwy','niemamnazwy','niemanazwy','niemamynazwy','nieposiadamnazwy','nieposiadamynazwy','niemamjeszczenazwy','jeszczeniemamnazwy','niemamfirmynazwy'];
+  if(variants.some(v=>Math.abs(v.length-compact.length)<=3&&editDistance(compact,v)<=3))return true;
+  const tokens=x.split(' ');
+  const hasName=tokens.some(tok=>tokenNear(tok,'nazwa',1)||tokenNear(tok,'nazwy',1)||tokenNear(tok,'nazwe',1));
+  const absence=tokens.some(tok=>['nie','brak','bez','jeszcze'].includes(tok)||tokenNear(tok,'brak',1));
+  return hasName&&absence
+}
     function handleNoNameIntent(){
       chat.needsName=true;chat.data.company='';chat.pendingKey=null;chat.pendingValue='';
       ai('Rozumiem — nie masz jeszcze nazwy firmy. Literówka nie szkodzi 🙂 Nie zapiszę tej odpowiedzi jako nazwy.');
@@ -78,46 +177,147 @@ const msgs=document.getElementById('msgs');
       if(current&&current.key==='company')chat.step++;
       setTimeout(askCurrent,220);
     }
-    function sanitizeValue(key,t){if(key==='usp'&&/^(pomiń|brak|nic)$/i.test(t))return '';if(key==='email'&&/^(pomiń|brak|nie chcę|nie chce)$/i.test(t))return '';return t.trim()}
+    function sanitizeValue(key,t){
+  const v=String(t).trim();
+  if(key==='usp'&&/^(pomin|pomiń|brak|nic|nie mam)$/i.test(v))return '';
+  if(key==='email'&&/^(pomin|pomiń|brak|nie chce|nie chcę)$/i.test(v))return '';
+  return v
+}
     function askCurrent(){updateProgress();const next=questions[chat.step];if(!next){startExtras();return}chat.phase='ask';chat.pendingKey=next.key;ai(next.q);if(next.chips)setTimeout(()=>addChips(next.chips),260)}
     function confirmValue(key,value){chat.phase='confirm';chat.pendingKey=key;chat.pendingValue=value;ai(`<div class="chatSummary"><b>Rozumiem to tak:</b><br>${esc(fieldLabel(key))}: <b>${esc(fieldSummary(key,value))}</b><span class="smartHint">Nie przejdę dalej, dopóki tego nie potwierdzisz.</span></div>`,true);setTimeout(addConfirmButtons,170)}
-    function commitPending(){const key=chat.pendingKey,value=chat.pendingValue;chat.data[key]=value;chat.pendingKey=null;chat.pendingValue='';chat.phase='ask';const advancesCurrent=questions[chat.step]&&questions[chat.step].key===key;if(advancesCurrent)chat.step++;if(key==='company')chat.needsName=false;
-      if(key==='industry'&&chat.needsName){setTimeout(offerNameSuggestion,180);return}
-      if(chat.step>=questions.length){setTimeout(startExtras,180);return}
-      setTimeout(askCurrent,180)}
-    function handleConfirmation(answerText){if(chat.phase!=='confirm')return;if(answerText==='yes'||isYes(answerText)){commitPending();return}chat.phase='ask';const key=chat.pendingKey;chat.pendingValue='';if(key==='company'){if(!chat.data.industry){chat.needsName=true;chat.step=1;ai('Jasne. Żeby zaproponować dobrą nazwę, najpierw muszę wiedzieć dokładnie, czym zajmuje się firma.');setTimeout(askCurrent,180);return}chat.nameRound++;offerNameSuggestion(true);return}ai(`Jasne. Poprawmy ${fieldLabel(key)}. Napisz właściwą wersję, a najpierw ją potwierdzę.`)}
+    
+    
 
-    function nameTokens(industry=''){const x=industry.toLowerCase();if(/import|sprowadz|sprzedaż samoch|sprzedaz samoch|handel aut|komis/.test(x))return ['AutoSelect','MotoSource','CarBridge','AutoPort','DriveSelect','MotoPrime'];if(/szklar|poliwęgl|poliwegl|greenhouse|tunel/.test(x))return ['GreenForma','Ogrody Pod Szkłem','PolyGarden','GreenHouse Pro','GardenFrame','VitaGlass'];if(/bram|ogrod|furt/.test(x))return ['StalForma','BramaLab','StalPoint','ForgeLine','SolidGate','MetalForma'];if(/detail|lakier|ceram|poler|auto detail/.test(x))return ['DetailForge','AutoGlow','PrimeDetail','ShineLab','DetailPoint','AutoForma'];if(/stomatolog|dentyst|gabinet stomat|higieniz|leczenie kanał|kanalow/.test(x))return ['DentaNova','SmilePoint','NovaDent','DentCare','DentAura','WhiteDent'];if(/budowl|remont|wykończ|wykoncz|elewac|murarsk/.test(x))return ['SolidDom','BuildForma','ProConstruct','DomPoint','FormaBud','BuildLab'];if(/fryz|beauty|kosmet|paznok|manicure|brwi|rzęs|rzes/.test(x))return ['AuraStudio','PureLine','NovaBeauty','GlowRoom','FormaBeauty','LunaStudio'];if(/opieka nad dzie|opiekuj|dziec|nian|żłob|zlob|przedszkol|klub malucha|babysit/.test(x))return ['MaliRazem','TuliMiejsce','DobryStart','BliskoDziecka','MaliOdkrywcy','TęczowyKącik'];if(/transport|przeprowad|kurier/.test(x))return ['MovePoint','CargoFlow','TransForma','RoutePro','FastLine','MoveLab'];return ['Nexa','VeroPoint','NovaForma','Primeo','Noviq','FormaOne']}
+    function nameTokens(industry=''){
+  const detected=detectIndustry(industry||chat.data.businessBrief||'');
+  return (INDUSTRY_PROFILES[detected.key]&&INDUSTRY_PROFILES[detected.key].names)||['Nexa','VeroPoint','NovaForma','Primeo','Noviq','FormaOne']
+}
     function scoreName(name){let score=7;const len=name.replace(/\s/g,'').length;if(len>=6&&len<=12)score+=1;if(!/[0-9]/.test(name))score+=.5;if(name.split(/\s+/).length<=2)score+=.5;return Math.min(9.5,score).toFixed(1)}
     function nameReason(name){const parts=[];if(name.length<15)parts.push('krótka');if(name.split(/\s+/).length<=2)parts.push('łatwa do zapamiętania');parts.push('nadaje się do logo i domeny');return parts.join(', ')}
-    function offerNameSuggestion(forceAlternative=false){chat.phase='naming';chat.needsName=true;const list=nameTokens(chat.data.industry);const idx=(chat.nameRound++)%list.length;let proposed=list[idx];if(proposed===chat.lastSuggestedName)proposed=list[(idx+1)%list.length];chat.lastSuggestedName=proposed;ai(`<div class="nameProposal"><span class="nameScore">Ocena marketingowa demo: ${scoreName(proposed)}/10</span><strong>${esc(proposed)}</strong><p>${esc(nameReason(proposed))}. To jest ocena heurystyczna BeeFlow — prawdziwe sprawdzenie konkurencji, domen i znaków towarowych dołączymy po podpięciu backendu.</p></div>`,true);setTimeout(()=>addChips(['Tak, ta nazwa pasuje','Pokaż inną nazwę','Wpiszę własną nazwę'],handleNameChoice),200)}
+    function offerNameSuggestion(forceAlternative=false){
+  chat.phase='naming';chat.needsName=true;
+  const list=nameTokens(chat.data.industry);const idx=(chat.nameRound++)%list.length;
+  let proposed=list[idx];if(proposed===chat.lastSuggestedName)proposed=list[(idx+1)%list.length];chat.lastSuggestedName=proposed;
+  ai(`<div class="nameProposal"><span class="nameScore">Propozycja robocza</span><strong>${esc(proposed)}</strong><p>${esc(nameReason(proposed))}. To jeszcze nie jest sprawdzenie dostępności domeny ani znaku towarowego — zrobimy je przed wyborem finalnej marki.</p></div>`,true);
+  setTimeout(()=>addChips(['Tak, ta nazwa pasuje','Pokaż inną nazwę','Wpiszę własną nazwę'],handleNameChoice),200)
+}
     function handleNameChoice(choice){if(/tak/i.test(choice)){confirmValue('company',chat.lastSuggestedName);return}if(/inną/i.test(choice)){offerNameSuggestion(true);return}chat.phase='naming-custom';ai('Jasne. Wpisz własną nazwę firmy — zatrzymam się na tym kroku, dopóki jej nie zaakceptujesz.')}
 
-    function looksLikeBusinessDescription(t=''){const x=String(t).trim();return x.split(/\s+/).length>=3&&/^(zajmuję|zajmuje|zajmujemy|prowadzę|prowadze|prowadzimy|firma|oferuję|oferuje|oferujemy|robimy|wykonuję|wykonuje|wykonujemy|sprowadzam|sprowadzamy|sprzedaję|sprzedaje|sprzedajemy)\b/i.test(x)}
+    function looksLikeBusinessDescription(t=''){
+  const x=String(t).trim(), n=intentText(x), words=n.split(' ').filter(Boolean);
+  if(words.length<2)return false;
+  const starts=/^(zajmuje|zajmujemy|prowadz|ofer|robimy|wykon|sprowadz|sprzed|opiekuj|pomagamy|serwis|napraw|montuj|produkuj)/.test(words[0]||'');
+  const sentence=/\b(sie|klient|rodzic|uslug|zlecen|prac|wykonujemy|oferujemy|pomagamy)\b/.test(n);
+  return starts || (words.length>=5&&sentence)
+}
     function confirmDetectedIndustry(){
-      chat.phase='industry-confirm';
-      const label=chat.data.industry||'Nie jestem jeszcze pewien branży';
-      ai(`<div class="chatSummary"><b>Najpierw upewnijmy się, że dobrze rozumiem firmę:</b><br>Branża: <b>${esc(label)}</b><span class="smartHint">Dopiero po potwierdzeniu zaproponuję nazwę.</span></div>`,true);
-      setTimeout(()=>addChips(['Tak, dokładnie','Nie — popraw branżę'],choice=>{bubble(choice,'user');if(/^Tak/i.test(choice)){offerNameSuggestion();return}chat.phase='industry-manual';ai('Napisz proszę w 2–6 słowach, czym dokładnie zajmuje się firma, np. „import i sprzedaż samochodów”, „salon paznokci”, „serwis rowerowy”.')}),180)
+  let detected=detectIndustry(chat.data.businessBrief||chat.data.industry||'');
+  if(!detected.confidence && chat.data.industry){
+    detected={key:'general',label:manualIndustryLabel(chat.data.industry),confidence:.7}
+  }
+  if(!detected.confidence){
+    chat.phase='industry-manual';chat.industryConfirmed=false;
+    ai('Nie chcę zgadywać branży na podstawie samego opisu. Napisz proszę w 2–6 słowach, jak nazwałbyś swoją branżę, np. „opieka nad dziećmi”, „import samochodów”, „salon paznokci”.');
+    return
+  }
+  chat.data.industry=detected.label;chat.industryConfidence=detected.confidence;chat.phase='industry-confirm';
+  ai(`<div class="chatSummary"><b>Sprawdzam, czy dobrze zrozumiałem:</b><br>Branża: <b>${esc(detected.label)}</b><span class="smartHint">Nie pójdę dalej, dopóki tego nie potwierdzisz.</span></div>`,true);
+  setTimeout(()=>addChips(['Tak, dokładnie','Nie — popraw branżę'],choice=>{
+    bubble(choice,'user');
+    if(/^Tak/i.test(choice)){
+      chat.industryConfirmed=true;
+      if(chat.needsName){offerNameSuggestion();return}
+      chat.phase='ask';setTimeout(askCurrent,160);return
     }
+    chat.phase='industry-manual';chat.industryConfirmed=false;
+    ai('Jasne. Napisz własnymi słowami nazwę branży w 2–6 słowach. Tym razem potraktuję ją jako kategorię, a nie opis firmy.')
+  }),180)
+}
 
 
-    function detectGlobalCorrection(t){const x=t.toLowerCase();if(isNoName(t))return false;if(/inna\s+nazwa|zmień\s+nazw|zmien\s+nazw|nie.*podoba.*nazwa|nazwa.*nie.*pasuje/.test(x)){chat.nameRound++;offerNameSuggestion(true);return true}const map=[['miast','city'],['obszar','city'],['usług','services'],['styl','style'],['telefon','phone'],['mail','email'],['e-mail','email'],['wyróż','usp'],['branż','industry']];for(const [needle,key] of map){if((x.includes('zmień')||x.includes('zmien')||x.includes('popraw'))&&x.includes(needle)){chat.phase='ask';chat.pendingKey=key;chat.step=Math.max(0,questions.findIndex(q=>q.key===key));ai(`Okej — wracamy do pola „${fieldLabel(key)}”. Podaj nową wersję.`);return true}}return false}
+    
 
-    function handleAskAnswer(t){const current=questions[chat.step];if(!current){startExtras();return}const key=current.key;if(key==='company'&&isNoName(t)){chat.needsName=true;chat.data.company='';chat.step++;ai('Jasne — najpierw poznam branżę, a potem zaproponuję nazwę i nie pójdziemy dalej, dopóki jej nie zaakceptujesz.');setTimeout(askCurrent,180);return}const value=sanitizeValue(key,t);if(key==='services'&&normalizeServices(value).length<2){ai('Daj mi proszę przynajmniej 2 usługi. Możesz je oddzielić przecinkami.');return}confirmValue(key,value)}
+    function handleAskAnswer(t){
+  const current=questions[chat.step];if(!current){startExtras();return}
+  const key=current.key;
+  if(key==='company'){
+    if(isNoName(t)){
+      chat.needsName=true;chat.data.company='';chat.step++;
+      ai('Jasne — nie masz jeszcze nazwy. Najpierw poznam firmę i branżę, a potem zaproponuję nazwę.');setTimeout(askCurrent,180);return
+    }
+    if(looksLikeBusinessDescription(t)){
+      chat.needsName=true;chat.data.company='';chat.data.businessBrief=t;
+      const cityIndex=questions.findIndex(q=>q.key==='city');chat.step=cityIndex>=0?cityIndex:Math.min(chat.step+2,questions.length);
+      ai('To wygląda jak opis działalności, nie jak nazwa firmy. Nie zapiszę tego jako nazwy — użyję opisu tylko do rozpoznania branży.');
+      setTimeout(confirmDetectedIndustry,180);return
+    }
+    if(intentText(t).split(' ').length>7){
+      ai('To wygląda bardziej jak opis firmy niż nazwa. Jeśli to naprawdę nazwa, wpisz ją krócej. Jeśli nie masz nazwy, napisz „nie mam nazwy”.');return
+    }
+  }
+  const value=sanitizeValue(key,t);
+  if(key==='businessBrief'&&value.length<8){ai('Napisz proszę jedno krótkie zdanie o tym, czym zajmuje się firma. Dzięki temu nie będę zgadywał branży.');return}
+  if(key==='services'&&!normalizeServices(value).length){ai('Podaj proszę przynajmniej jedną usługę. Możesz pisać normalnie albo oddzielić usługi przecinkami.');return}
+  if(key==='phone'){
+    const digits=value.replace(/\D/g,'');
+    if(digits.length<7){ai('Ten numer wygląda na zbyt krótki. Sprawdź proszę cyfry i wpisz numer jeszcze raz.');return}
+  }
+  if(key==='email'&&value&& !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(value)){
+    ai('Ten adres e-mail wygląda na niepełny. Wpisz go ponownie albo napisz „pomiń”.');return
+  }
+  confirmValue(key,value)
+}
 
-    function submitMessage(text){const t=(text??inp.value).trim();if(!t)return;bubble(t,'user');inp.value='';
-      const currentKey=questions[chat.step]&&questions[chat.step].key;
-      if(isNoName(t)&&(currentKey==='company'||chat.pendingKey==='company'||chat.phase==='naming'||chat.phase==='naming-custom')){handleNoNameIntent();return}
-      if(detectGlobalCorrection(t))return;
-      if(chat.phase==='confirm'){if(isYes(t)){handleConfirmation('yes');return}if(isNo(t)){handleConfirmation('no');return}chat.pendingValue=sanitizeValue(chat.pendingKey,t);confirmValue(chat.pendingKey,chat.pendingValue);return}
-      if(chat.phase==='industry-confirm'){if(isYes(t)){offerNameSuggestion();return}if(isNo(t)){chat.phase='industry-manual';ai('Jasne. Napisz w 2–6 słowach, czym dokładnie zajmuje się firma.');return}chat.data.industry=deriveIndustryLabel(t);confirmDetectedIndustry();return}
-      if(chat.phase==='industry-manual'){chat.data.industry=deriveIndustryLabel(t);confirmDetectedIndustry();return}
-      if(chat.phase==='naming'){if(isNoName(t)){handleNoNameIntent();return}if(/inna|inny|kolejn|bardziej|coś|cos|propozycj|jeszcze/.test(t.toLowerCase())){offerNameSuggestion(true);return}if(isYes(t)){confirmValue('company',chat.lastSuggestedName);return}if(looksLikeBusinessDescription(t)){chat.data.businessBrief=(chat.data.businessBrief?chat.data.businessBrief+'; ':'')+t;chat.data.industry=deriveIndustryLabel(t);ai('To wygląda jak opis działalności, a nie nazwa firmy. Nie zapiszę tego jako nazwy — wykorzystam to do lepszego rozpoznania branży.');setTimeout(confirmDetectedIndustry,160);return}confirmValue('company',t);return}
-      if(chat.phase==='naming-custom'){if(isNoName(t)){handleNoNameIntent();return}if(looksLikeBusinessDescription(t)){ai('To nadal wygląda jak opis działalności. Wpisz proszę samą nazwę firmy, np. „AutoSelect”.');return}confirmValue('company',t);return}
-      if(chat.phase==='extras'){handleExtraAnswer(t);return}
-      handleAskAnswer(t)}
-    form.addEventListener('submit',e=>{e.preventDefault();submitMessage();requestAnimationFrame(()=>{inp.focus({preventScroll:true});msgs.scrollTop=msgs.scrollHeight})});
+    function submitMessage(text){
+  const t=(text??inp.value).trim();if(!t)return;bubble(t,'user');inp.value='';
+  const currentKey=questions[chat.step]&&questions[chat.step].key;
+  if(isNoName(t)&&(currentKey==='company'||chat.pendingKey==='company'||chat.phase==='naming'||chat.phase==='naming-custom')){handleNoNameIntent();return}
+  if(detectGlobalCorrection(t))return;
+  if(chat.phase==='confirm'){
+    if(isYes(t)){handleConfirmation('yes');return}
+    if(isNo(t)){handleConfirmation('no');return}
+    chat.pendingValue=sanitizeValue(chat.pendingKey,t);confirmValue(chat.pendingKey,chat.pendingValue);return
+  }
+  if(chat.phase==='industry-confirm'){
+    if(isYes(t)){
+      chat.industryConfirmed=true;if(chat.needsName){offerNameSuggestion();return}chat.phase='ask';setTimeout(askCurrent,150);return
+    }
+    if(isNo(t)){chat.phase='industry-manual';chat.industryConfirmed=false;ai('Jasne. Napisz w 2–6 słowach, jak nazwałbyś branżę.');return}
+    chat.data.industry=deriveIndustryLabel(t,true);chat.industryConfidence=.7;confirmDetectedIndustry();return
+  }
+  if(chat.phase==='industry-manual'){
+    chat.data.industry=deriveIndustryLabel(t,true);chat.industryConfidence=.7;chat.phase='industry-confirm';
+    ai(`<div class="chatSummary"><b>Ustawiam branżę jako:</b><br><b>${esc(chat.data.industry)}</b><span class="smartHint">Potwierdź albo popraw jeszcze raz.</span></div>`,true);
+    setTimeout(()=>addChips(['Tak, dokładnie','Nie — popraw branżę'],choice=>{bubble(choice,'user');if(/^Tak/i.test(choice)){chat.industryConfirmed=true;if(chat.needsName)offerNameSuggestion();else{chat.phase='ask';setTimeout(askCurrent,150)}}else{chat.phase='industry-manual';ai('Okej — wpisz branżę jeszcze raz, krótko i konkretnie.')}}),170);return
+  }
+  if(chat.phase==='naming'){
+    if(isNoName(t)){handleNoNameIntent();return}
+    if(/inna|inny|kolejn|bardziej|cos|propozycj|jeszcze/.test(intentText(t))){offerNameSuggestion(true);return}
+    if(isYes(t)){confirmValue('company',chat.lastSuggestedName);return}
+    if(looksLikeBusinessDescription(t)){
+      chat.data.businessBrief=(chat.data.businessBrief?chat.data.businessBrief+'; ':'')+t;
+      ai('To wygląda jak dalszy opis działalności, nie jak nazwa. Zachowuję go jako kontekst firmy i nie zapisuję jako nazwy.');setTimeout(confirmDetectedIndustry,160);return
+    }
+    confirmValue('company',t);return
+  }
+  if(chat.phase==='naming-custom'){
+    if(isNoName(t)){handleNoNameIntent();return}
+    if(looksLikeBusinessDescription(t)||intentText(t).split(' ').length>7){ai('To wygląda jak opis działalności. Wpisz proszę samą nazwę firmy, np. „AutoSelect”.');return}
+    confirmValue('company',t);return
+  }
+  if(chat.phase==='extras'){handleExtraAnswer(t);return}
+  if(chat.phase==='upload'){ai('Na tym etapie użyj pól do logo/zdjęć albo przycisku „Wygeneruj profesjonalne demo”.');return}
+  handleAskAnswer(t)
+}
+    
+function resetChat(){
+  chat.started=false;chat.step=0;chat.phase='ask';chat.pendingKey=null;chat.pendingValue='';chat.needsName=false;chat.nameRound=0;chat.lastSuggestedName='';chat.extraRound=0;chat.industryConfirmed=false;chat.industryConfidence=0;chat.industrySource='';
+  chat.data={company:'',businessBrief:'',industry:'',city:'',services:'',style:'',usp:'',headline:'',phone:'',email:'',logo:'',logoMode:'none',logoSeed:0,photos:[],projectPhotos:[],extras:[],extraNotes:'',projectsEnabled:false};
+  inp.disabled=false;form.classList.remove('disabledInput');msgs.innerHTML='';updateProgress();initChat()
+}
+const resetBtn=document.getElementById('chatReset');if(resetBtn)resetBtn.addEventListener('click',()=>{if(confirm('Zacząć projekt od nowa? Obecne dane demo zostaną wyczyszczone.'))resetChat()});
+
+form.addEventListener('submit',e=>{e.preventDefault();submitMessage();requestAnimationFrame(()=>{inp.focus({preventScroll:true});msgs.scrollTop=msgs.scrollHeight})});
 
     function startExtras(){chat.step=questions.length;chat.phase='extras';updateProgress();inp.disabled=false;form.classList.remove('disabledInput');ai('Podstawowe dane są gotowe. Czy chcesz dodać coś jeszcze do strony? Możesz napisać np. „zakładkę Projekty”, „FAQ”, „cennik”, „opinie klientów” albo po prostu „nie”.');setTimeout(()=>addChips(['Nie, to wszystko','Projekty / wizualizacje','FAQ','Cennik','Opinie klientów'],handleExtraChoice),240)}
     function addExtra(label){if(!chat.data.extras.includes(label))chat.data.extras.push(label);if(/projekt|wizual/i.test(label))chat.data.projectsEnabled=true}
@@ -190,65 +390,42 @@ const msgs=document.getElementById('msgs');
     function themeClass(style=''){const s=style.toLowerCase();if(s.includes('jasna'))return 'theme-light';if(s.includes('sport'))return 'theme-sport';if(s.includes('elegancka'))return 'theme-elegant';return 'theme-dark'}
     function hashString(str=''){let h=0;for(let i=0;i<str.length;i++)h=((h<<5)-h)+str.charCodeAt(i)|0;return Math.abs(h)}
     function layoutClass(d){const n=hashString((d.company||'')+'|'+(d.industry||'')+'|'+(d.style||''))%3;return ['layout-split','layout-editorial','layout-showcase'][n]}
-    function industryLabel(industry=''){return industry.trim()||'Profesjonalne usługi'}
-    function cleanUsp(usp=''){return /^(pomiń|brak)$/i.test(usp.trim())?'':usp.trim()}
-    function heroTitle(d){if((d.headline||'').trim())return d.headline.trim();const ind=(d.industry||'').toLowerCase();const us=normalizeServices(d.services||'').map(x=>x.toLowerCase()).join(' ');if(/bram|ogrodz|spaw/.test(ind+' '+us))return 'Bramy i ogrodzenia dopasowane do Twojej posesji.';if(/detail|auto|samoch|lakier/.test(ind+' '+us))return 'Zadbaj o auto tak, żeby efekt było widać od pierwszego spojrzenia.';if(/budow|remont|wykoń/.test(ind+' '+us))return 'Dobra realizacja zaczyna się od konkretnego planu.';if(/fryz|beauty|kosmet|paznok/.test(ind+' '+us))return 'Profesjonalny efekt w miejscu, do którego chce się wracać.';if(/transport|przeprowad|kurier/.test(ind+' '+us))return 'Sprawna obsługa, jasne warunki i terminowa realizacja.';return `${d.company||'Twoja firma'} — profesjonalnie od pierwszego kontaktu.`}
-    function heroLead(d){const usp=cleanUsp(d.usp);const area=d.city?`Obsługujemy ${d.city} i okolice.`:'Obsługujemy klientów lokalnie.';if(usp)return `${usp}. ${area} Każde zapytanie traktujemy indywidualnie i jasno ustalamy zakres realizacji.`;return `${industryLabel(d.industry)} dopasowane do potrzeb klienta. ${area} Szybki kontakt, czytelna oferta i konkretny następny krok.`}
-    function serviceDesc(name,industry=''){const n=(name+' '+industry).toLowerCase();if(/bram.*przesuw|przesuw.*bram/.test(n))return 'Projekt, wykonanie i dopasowanie bramy przesuwnej do światła wjazdu, sposobu użytkowania oraz warunków na posesji.';if(/bram/.test(n))return 'Wykonanie konstrukcji pod konkretny wymiar, charakter posesji i sposób użytkowania — od ustalenia zakresu po gotowy montaż.';if(/ogrodz/.test(n))return 'Spójne wizualnie ogrodzenie dopasowane do budynku, działki i oczekiwanego poziomu prywatności.';if(/furt/.test(n))return 'Furtka dopasowana do bramy i ogrodzenia, z naciskiem na wygodę użytkowania oraz trwałe wykonanie.';if(/malow|lakier|proszk/.test(n))return 'Przygotowanie i estetyczne zabezpieczenie powierzchni, tak aby wykończenie dobrze wyglądało i było odporne na eksploatację.';if(/montaż|montaz/.test(n))return 'Dokładny montaż z ustawieniem elementów, kontrolą pracy i końcowym sprawdzeniem całej realizacji.';if(/ceram/.test(n))return 'Zabezpieczenie lakieru powłoką dobraną do oczekiwanego efektu, sposobu użytkowania auta i poziomu ochrony.';if(/poler|korekt/.test(n))return 'Korekta powierzchni nastawiona na poprawę głębi lakieru, ograniczenie zarysowań i przygotowanie auta do zabezpieczenia.';if(/pran|wnętr|wnetr/.test(n))return 'Dokładne czyszczenie wnętrza z doborem procesu do materiałów oraz stopnia zabrudzenia.';if(/remont|wykoń|wykoncz/.test(n))return 'Zakres prac ustalany przed startem, z naciskiem na porządek realizacji, komunikację i przewidywalny efekt końcowy.';return 'Zakres usługi ustalamy indywidualnie, tak aby klient od początku wiedział, co obejmuje realizacja i jaki jest kolejny krok.'}
-    function aboutCopy(d){const usp=cleanUsp(d.usp);const ind=industryLabel(d.industry).toLowerCase();return `${d.company||'Nasza firma'} specjalizuje się w ${ind}. ${usp?usp+'. ':''}Najważniejsze są dla nas jasne ustalenia, dobry kontakt i wykonanie zgodne z tym, na co umówiliśmy się z klientem.`}
-    function trustItems(d){const ind=(d.industry||'').toLowerCase();if(/bram|ogrodz|spaw/.test(ind))return [['Wykonanie pod wymiar','Rozwiązanie dopasowane do konkretnej posesji'],['Jasny zakres prac','Wiesz, co obejmuje realizacja'],['Kontakt lokalny',`${d.city||'Twoja okolica'} i okolice`]];if(/detail|auto/.test(ind))return [['Dobór usługi','Zakres dopasowany do stanu auta'],['Dokładne wykonanie','Nacisk na detal i efekt końcowy'],['Wygodny kontakt','Szybkie ustalenie terminu']];return [['Szybka odpowiedź','Bez zbędnego czekania'],['Jasna wycena','Czytelny zakres i kolejny krok'],['Lokalna obsługa',`${d.city||'Twoja okolica'} i okolice`]]}
-    function whyCards(d){const usp=cleanUsp(d.usp);return [['Indywidualne podejście','Zakres dopasowany do konkretnego zlecenia.'],['Dobry kontakt','Klient wie, co dzieje się na każdym etapie.'],['Przejrzyste zasady','Najważniejsze ustalenia są jasne przed startem.'],[usp||'Dbałość o wykonanie',usp?'To właśnie ten element wyróżnia firmę na tle konkurencji.':'Efekt ma dobrze wyglądać i dobrze działać.']]}
+    
+    
+    
+    
+    
+    
+    
+    
     function siteCopy(d){
-      const cat=categoryKey(d), n=hashString(`${d.company||''}|${d.city||''}|sections`)%3;
-      const packs={
-        cartrade:[
-          {servicesTitle:'Import auta krok po kroku',servicesLead:'Od określenia budżetu po sprowadzenie i odbiór samochodu.',ctaTitle:'Szukasz konkretnego auta?',ctaLead:'Napisz model, budżet i najważniejsze wymagania.',contactTitle:'Zacznijmy od auta, którego szukasz',contactLead:'Kilka informacji wystarczy, żeby rozpocząć rozmowę.'},
-          {servicesTitle:'Samochód dobrany do Ciebie',servicesLead:'Nie zaczynamy od przypadkowej oferty — najpierw ustalamy wymagania.',ctaTitle:'Chcesz sprowadzić auto?',ctaLead:'Powiedz czego szukasz i jaki masz budżet.',contactTitle:'Porozmawiajmy o imporcie',contactLead:'Zostaw kontakt i podstawowe wymagania.'},
-          {servicesTitle:'Od wyboru do odbioru',servicesLead:'Jasne etapy importu i jeden kontakt przez cały proces.',ctaTitle:'Masz już wybrany model?',ctaLead:'Sprawdźmy, jak podejść do zakupu.',contactTitle:'Sprawdź możliwości',contactLead:'Napisz, jakiego samochodu szukasz.'}
-        ],
-        greenhouse:[
-          {servicesTitle:'Szklarnia dopasowana do Twojego ogrodu',servicesLead:'Konstrukcja, poliwęglan i sposób montażu dobrane do Twojej przestrzeni.',ctaTitle:'Masz miejsce na szklarnię?',ctaLead:'Podaj wymiary ogrodu i oczekiwany rozmiar. Dobierzemy rozwiązanie.',contactTitle:'Wyceń swoją szklarnię',contactLead:'Napisz, jakiej wielkości szklarni potrzebujesz i czy chcesz montaż.'},
-          {servicesTitle:'Od konstrukcji do gotowej szklarni',servicesLead:'Możemy wykonać całość albo przygotować zestaw do samodzielnego montażu.',ctaTitle:'Chcesz wydłużyć sezon w ogrodzie?',ctaLead:'Powiedz, ile masz miejsca i co chcesz uprawiać.',contactTitle:'Porozmawiajmy o szklarni',contactLead:'Kilka wymiarów i krótki opis wystarczą na start.'},
-          {servicesTitle:'Szklarnie z poliwęglanu bez zbędnych komplikacji',servicesLead:'Trwała konstrukcja, praktyczny układ i opcja montażu dopasowana do Ciebie.',ctaTitle:'Sprawdź, jaki wariant będzie pasował',ctaLead:'Napisz, jaki rozmiar i sposób montażu Cię interesuje.',contactTitle:'Poproś o wycenę',contactLead:'Zostaw kontakt i podstawowe wymiary.'}
-        ],
-        gates:[
-          {servicesTitle:'Co zrobimy dla Twojego wjazdu',servicesLead:'Pomiar, wykonanie i montaż — wszystko pod konkretną posesję.',ctaTitle:'Masz pomysł na bramę?',ctaLead:'Pokaż wjazd lub podaj wymiary. Powiemy, co ma sens.',contactTitle:'Wyceńmy Twoją bramę',contactLead:'Zostaw kontakt. Dopytamy tylko o rzeczy potrzebne do wyceny.'},
-          {servicesTitle:'Od pomiaru do montażu',servicesLead:'Ty pokazujesz, czego potrzebujesz. My dobieramy wykonanie.',ctaTitle:'Zacznij od krótkiej rozmowy',ctaLead:'Bez zobowiązań. Najpierw ustalamy, co chcesz zrobić.',contactTitle:'Porozmawiajmy o wjeździe',contactLead:'Numer telefonu i krótki opis wystarczą na start.'},
-          {servicesTitle:'Bramy i ogrodzenia pod wymiar',servicesLead:'Bez gotowych schematów. Rozwiązanie dopasowane do Twojej posesji.',ctaTitle:'Chcesz poznać koszt?',ctaLead:'Podeślij podstawowe informacje. Przygotujemy konkretny kolejny krok.',contactTitle:'Poproś o wycenę',contactLead:'Napisz, czego potrzebujesz. Odezwie się do Ciebie człowiek.'}
-        ],
-        auto:[
-          {servicesTitle:'Wybierz efekt, nie pakiet',servicesLead:'Dobieramy usługę do stanu auta i tego, co chcesz poprawić.',ctaTitle:'Chcesz, żeby auto znów robiło wrażenie?',ctaLead:'Napisz model i oczekiwany efekt.',contactTitle:'Dobierzmy usługę',contactLead:'Zostaw kontakt i model auta.'},
-          {servicesTitle:'Co możemy zrobić dla Twojego auta',servicesLead:'Krótko, konkretnie i bez wciskania zbędnych usług.',ctaTitle:'Sprawdź, czego potrzebuje Twoje auto',ctaLead:'Wyślij podstawowe informacje.',contactTitle:'Umówmy zakres i termin',contactLead:'Zostaw kontakt — wrócimy z propozycją.'},
-          {servicesTitle:'Detailing dopasowany do auta',servicesLead:'Zakres wynika ze stanu auta, nie z gotowego cennika.',ctaTitle:'Masz konkretny efekt na oku?',ctaLead:'Powiedz jaki. Dobierzemy drogę do niego.',contactTitle:'Porozmawiajmy o aucie',contactLead:'Model, usługa i kontakt — tyle wystarczy.'}
-        ],
-        dental:[
-          {servicesTitle:'Zadbaj o zdrowy uśmiech',servicesLead:'Profilaktyka, leczenie i higienizacja w spokojnej, zrozumiałej formule.',ctaTitle:'Chcesz umówić wizytę?',ctaLead:'Napisz, czego potrzebujesz — pomożemy wybrać odpowiedni termin.',contactTitle:'Umów wizytę',contactLead:'Zostaw kontakt i krótko napisz, z czym się zgłaszasz.'},
-          {servicesTitle:'Stomatologia bez zbędnego stresu',servicesLead:'Najpierw diagnoza i rozmowa. Potem jasny plan dalszego działania.',ctaTitle:'Masz pytanie o leczenie?',ctaLead:'Opisz krótko sytuację lub umów konsultację.',contactTitle:'Skontaktuj się z gabinetem',contactLead:'Zostaw numer telefonu lub e-mail.'},
-          {servicesTitle:'Od profilaktyki po leczenie',servicesLead:'Dobieramy rozwiązanie do stanu zdrowia i potrzeb pacjenta.',ctaTitle:'Zrób pierwszy krok do zdrowego uśmiechu',ctaLead:'Umów konsultację i poznaj możliwe rozwiązania.',contactTitle:'Zarezerwuj kontakt',contactLead:'Kilka informacji wystarczy, żeby zacząć.'}
-        ],
-        build:[
-          {servicesTitle:'Zakres prac bez niedomówień',servicesLead:'Wiesz, co robimy, zanim zaczniemy.',ctaTitle:'Masz pracę do wyceny?',ctaLead:'Opisz zakres. Resztę doprecyzujemy.',contactTitle:'Omówmy realizację',contactLead:'Zostaw kontakt i krótki opis.'},
-          {servicesTitle:'Od planu do gotowego efektu',servicesLead:'Konkretny zakres i jasny kolejny krok.',ctaTitle:'Zacznijmy od zakresu',ctaLead:'Powiedz, co chcesz zrobić.',contactTitle:'Poproś o wycenę',contactLead:'Krótki opis wystarczy na start.'},
-          {servicesTitle:'Prace prowadzone krok po kroku',servicesLead:'Mniej chaosu, więcej jasnych ustaleń.',ctaTitle:'Planujesz realizację?',ctaLead:'Napisz, czego potrzebujesz.',contactTitle:'Porozmawiajmy o terminie',contactLead:'Zostaw numer i zakres prac.'}
-        ],
-        transport:[
-          {servicesTitle:'Transport bez komplikacji',servicesLead:'Trasa, ładunek, termin — i możemy działać.',ctaTitle:'Masz coś do przewiezienia?',ctaLead:'Podaj skąd, dokąd i co przewozimy.',contactTitle:'Sprawdź termin i cenę',contactLead:'Zostaw dane trasy i kontakt.'},
-          {servicesTitle:'Przewóz dopasowany do zlecenia',servicesLead:'Bez zgadywania — najpierw konkretne dane.',ctaTitle:'Potrzebujesz transportu?',ctaLead:'Napisz trasę i termin.',contactTitle:'Wyceńmy przejazd',contactLead:'Kilka danych i wrócimy z odpowiedzią.'},
-          {servicesTitle:'Szybka wycena transportu',servicesLead:'Podajesz trasę. My sprawdzamy możliwość realizacji.',ctaTitle:'Sprawdź dostępność',ctaLead:'Podaj termin i miejsce odbioru.',contactTitle:'Zostaw dane zlecenia',contactLead:'Skąd, dokąd, co i kiedy.'}
-        ],
-        beauty:[
-          {servicesTitle:'Wybierz efekt, którego szukasz',servicesLead:'Pomagamy dobrać usługę bez zbędnego kombinowania.',ctaTitle:'Chcesz umówić wizytę?',ctaLead:'Wybierz usługę i zostaw kontakt.',contactTitle:'Umów termin',contactLead:'Napisz, jaka usługa Cię interesuje.'},
-          {servicesTitle:'Usługi dopasowane do Ciebie',servicesLead:'Krótko wyjaśniamy, co daje każda z nich.',ctaTitle:'Gotowa na wizytę?',ctaLead:'Wybierz zakres i dogodny termin.',contactTitle:'Zarezerwuj kontakt',contactLead:'Zostaw numer lub e-mail.'},
-          {servicesTitle:'Twój efekt, nasza praca',servicesLead:'Dobieramy usługę do tego, czego oczekujesz.',ctaTitle:'Zrób pierwszy krok',ctaLead:'Napisz, jaki efekt chcesz osiągnąć.',contactTitle:'Umówmy wizytę',contactLead:'Zostaw kontakt, odezwiemy się.'}
-        ],
-        general:[
-          {servicesTitle:'Zobacz, co możemy dla Ciebie zrobić',servicesLead:'Konkretny zakres. Krótkie opisy. Szybka decyzja.',ctaTitle:'Masz zlecenie?',ctaLead:'Opisz je w dwóch zdaniach.',contactTitle:'Porozmawiajmy',contactLead:'Zostaw kontakt i krótki opis.'},
-          {servicesTitle:'Oferta bez zbędnych słów',servicesLead:'Od razu widzisz, czy to rozwiązanie dla Ciebie.',ctaTitle:'Chcesz poznać kolejny krok?',ctaLead:'Napisz, czego potrzebujesz.',contactTitle:'Zostaw kontakt',contactLead:'Wrócimy z konkretną odpowiedzią.'},
-          {servicesTitle:'W czym możemy pomóc',servicesLead:'Krótko, jasno i pod konkretną potrzebę.',ctaTitle:'Zacznijmy od rozmowy',ctaLead:'Kilka informacji wystarczy.',contactTitle:'Napisz do nas',contactLead:'Kontakt i krótki opis — resztę ustalimy.'}
-        ]
-      };
-      return (packs[cat]||packs.general)[n]
-    }
+  const cat=categoryKey(d), n=hashString(`${d.company||''}|${d.city||''}|sections`)%3;
+  const common=(a,b,c,d1,e,f)=>[{servicesTitle:a,servicesLead:b,ctaTitle:c,ctaLead:d1,contactTitle:e,contactLead:f}];
+  const packs={
+    cartrade:[{servicesTitle:'Import auta krok po kroku',servicesLead:'Od określenia budżetu po sprowadzenie i odbiór samochodu.',ctaTitle:'Szukasz konkretnego auta?',ctaLead:'Napisz model, budżet i najważniejsze wymagania.',contactTitle:'Zacznijmy od auta, którego szukasz',contactLead:'Kilka informacji wystarczy, żeby rozpocząć rozmowę.'},{servicesTitle:'Samochód dobrany do Ciebie',servicesLead:'Najpierw wymagania, potem konkretne oferty.',ctaTitle:'Chcesz sprowadzić auto?',ctaLead:'Powiedz czego szukasz i jaki masz budżet.',contactTitle:'Porozmawiajmy o imporcie',contactLead:'Zostaw kontakt i podstawowe wymagania.'},{servicesTitle:'Od wyboru do odbioru',servicesLead:'Jasne etapy importu i jeden kontakt przez cały proces.',ctaTitle:'Masz już wybrany model?',ctaLead:'Sprawdźmy, jak podejść do zakupu.',contactTitle:'Sprawdź możliwości',contactLead:'Napisz, jakiego samochodu szukasz.'}],
+    childcare:[{servicesTitle:'Opieka dopasowana do rytmu rodziny',servicesLead:'Bezpieczne warunki, uważna opieka i jasne zasady dla rodziców.',ctaTitle:'Szukasz opieki dla dziecka?',ctaLead:'Napisz wiek dziecka i godziny, w których potrzebujesz wsparcia.',contactTitle:'Zapytaj o dostępność',contactLead:'Zostaw kontakt i krótko opisz swoje potrzeby.'},{servicesTitle:'Spokojniejszy dzień rodzica',servicesLead:'Opieka w czasie pracy i obowiązków, z dobrym kontaktem z rodzicem.',ctaTitle:'Sprawdź wolne miejsca',ctaLead:'Podaj dni, godziny i wiek dziecka.',contactTitle:'Porozmawiajmy o opiece',contactLead:'Kilka informacji wystarczy na start.'},{servicesTitle:'Dobre miejsce dla małych ludzi',servicesLead:'Codzienna opieka i aktywności dopasowane do wieku dzieci.',ctaTitle:'Chcesz poznać warunki?',ctaLead:'Napisz, jakiej opieki potrzebujesz.',contactTitle:'Zapytaj o opiekę',contactLead:'Odpowiemy konkretnie o dostępności i organizacji.'}],
+    greenhouse:[{servicesTitle:'Szklarnia dopasowana do Twojego ogrodu',servicesLead:'Konstrukcja, poliwęglan i montaż dobrane do przestrzeni.',ctaTitle:'Masz miejsce na szklarnię?',ctaLead:'Podaj wymiary i oczekiwany rozmiar.',contactTitle:'Wyceń swoją szklarnię',contactLead:'Napisz, jakiej wielkości szklarni potrzebujesz.'},{servicesTitle:'Od konstrukcji do gotowej szklarni',servicesLead:'Całość z montażem albo zestaw do samodzielnego skręcenia.',ctaTitle:'Chcesz wydłużyć sezon?',ctaLead:'Powiedz, ile masz miejsca i co chcesz uprawiać.',contactTitle:'Porozmawiajmy o szklarni',contactLead:'Kilka wymiarów wystarczy na start.'},{servicesTitle:'Szklarnie z poliwęglanu bez komplikacji',servicesLead:'Trwała konstrukcja i praktyczny układ.',ctaTitle:'Sprawdź odpowiedni wariant',ctaLead:'Napisz rozmiar i sposób montażu.',contactTitle:'Poproś o wycenę',contactLead:'Zostaw kontakt i podstawowe wymiary.'}],
+    gates:[{servicesTitle:'Co zrobimy dla Twojego wjazdu',servicesLead:'Pomiar, wykonanie i montaż pod konkretną posesję.',ctaTitle:'Masz pomysł na bramę?',ctaLead:'Pokaż wjazd lub podaj wymiary.',contactTitle:'Wyceńmy Twoją bramę',contactLead:'Dopytamy tylko o rzeczy potrzebne do wyceny.'},{servicesTitle:'Od pomiaru do montażu',servicesLead:'Ty pokazujesz potrzebę. My dobieramy wykonanie.',ctaTitle:'Zacznij od krótkiej rozmowy',ctaLead:'Najpierw ustalamy, co ma sens.',contactTitle:'Porozmawiajmy o wjeździe',contactLead:'Numer telefonu i krótki opis wystarczą.'},{servicesTitle:'Bramy i ogrodzenia pod wymiar',servicesLead:'Rozwiązanie dopasowane do posesji.',ctaTitle:'Chcesz poznać koszt?',ctaLead:'Podeślij podstawowe informacje.',contactTitle:'Poproś o wycenę',contactLead:'Napisz, czego potrzebujesz.'}],
+    auto:[{servicesTitle:'Wybierz efekt, nie pakiet',servicesLead:'Dobieramy usługę do stanu auta i oczekiwanego efektu.',ctaTitle:'Chcesz odświeżyć auto?',ctaLead:'Napisz model i oczekiwany efekt.',contactTitle:'Dobierzmy usługę',contactLead:'Zostaw kontakt i model auta.'}],
+    dental:[{servicesTitle:'Zadbaj o zdrowy uśmiech',servicesLead:'Profilaktyka, leczenie i higienizacja w spokojnej formule.',ctaTitle:'Chcesz umówić wizytę?',ctaLead:'Napisz, czego potrzebujesz.',contactTitle:'Umów wizytę',contactLead:'Zostaw kontakt i krótko napisz, z czym się zgłaszasz.'}],
+    beauty:[{servicesTitle:'Usługi dopasowane do efektu',servicesLead:'Wybierz usługę i termin, który Ci odpowiada.',ctaTitle:'Masz ochotę na zmianę?',ctaLead:'Napisz, jaki efekt chcesz osiągnąć.',contactTitle:'Umów wizytę',contactLead:'Zostaw kontakt i wybierz usługę.'}],
+    build:[{servicesTitle:'Od ustaleń do gotowego efektu',servicesLead:'Jasny zakres prac i konkretne etapy realizacji.',ctaTitle:'Planujesz remont lub realizację?',ctaLead:'Opisz zakres i lokalizację.',contactTitle:'Porozmawiajmy o pracach',contactLead:'Zostaw kontakt i krótki zakres.'}],
+    transport:[{servicesTitle:'Transport bez zbędnych komplikacji',servicesLead:'Trasa, ładunek, termin i konkretna wycena.',ctaTitle:'Masz coś do przewiezienia?',ctaLead:'Podaj trasę, termin i rodzaj ładunku.',contactTitle:'Sprawdź termin i cenę',contactLead:'Zostaw dane do szybkiej wyceny.'}],
+    plumbing:[{servicesTitle:'Instalacje i naprawy bez zgadywania',servicesLead:'Diagnoza problemu, jasny zakres i sprawne wykonanie.',ctaTitle:'Potrzebujesz hydraulika?',ctaLead:'Opisz problem lub planowaną instalację.',contactTitle:'Umów kontakt',contactLead:'Napisz, czego potrzebujesz i gdzie.'}],
+    electrical:[{servicesTitle:'Elektryka wykonana jasno i bezpiecznie',servicesLead:'Od drobnych napraw po instalacje i rozdzielnie.',ctaTitle:'Masz temat elektryczny?',ctaLead:'Opisz zakres i lokalizację.',contactTitle:'Zapytaj o termin',contactLead:'Zostaw kontakt i krótki opis.'}],
+    hvac:[{servicesTitle:'Komfort przez cały rok',servicesLead:'Dobór, montaż i serwis klimatyzacji lub wentylacji.',ctaTitle:'Chcesz dobrać urządzenie?',ctaLead:'Napisz, jakie pomieszczenie chcesz obsłużyć.',contactTitle:'Umów konsultację',contactLead:'Zostaw kontakt i podstawowe informacje.'}],
+    cleaning:[{servicesTitle:'Czysto bez tracenia czasu',servicesLead:'Zakres sprzątania dopasowany do domu, firmy lub zlecenia.',ctaTitle:'Potrzebujesz sprzątania?',ctaLead:'Podaj miejsce, zakres i termin.',contactTitle:'Sprawdź dostępność',contactLead:'Zostaw kontakt i krótki opis.'}],
+    autoservice:[{servicesTitle:'Serwis bez niejasnych kosztów',servicesLead:'Najpierw diagnoza, potem uzgodniony zakres naprawy.',ctaTitle:'Auto wymaga serwisu?',ctaLead:'Napisz model i objawy.',contactTitle:'Umów diagnozę',contactLead:'Zostaw kontakt i opisz problem.'}],
+    bicycle:[{servicesTitle:'Rower gotowy do jazdy',servicesLead:'Przegląd, naprawa i regulacja dopasowana do stanu roweru.',ctaTitle:'Co dzieje się z rowerem?',ctaLead:'Opisz problem lub wybierz usługę.',contactTitle:'Umów serwis',contactLead:'Zostaw kontakt i model roweru.'}],
+    photo:[{servicesTitle:'Kadry dopasowane do okazji',servicesLead:'Sesja, styl i zakres ustalone przed zdjęciami.',ctaTitle:'Planujesz sesję?',ctaLead:'Napisz okazję, termin i miejsce.',contactTitle:'Sprawdź termin',contactLead:'Zostaw kontakt i krótki pomysł.'}],
+    accounting:[{servicesTitle:'Księgowość bez zbędnego chaosu',servicesLead:'Jasny zakres obsługi i kontakt wtedy, kiedy go potrzebujesz.',ctaTitle:'Szukasz obsługi księgowej?',ctaLead:'Napisz rodzaj działalności i czego potrzebujesz.',contactTitle:'Umów rozmowę',contactLead:'Zostaw kontakt i podstawowe informacje.'}],
+    pet:[{servicesTitle:'Dobra opieka nad Twoim pupilem',servicesLead:'Zakres usługi dopasowany do zwierzęcia i jego potrzeb.',ctaTitle:'Jak możemy pomóc Twojemu pupilowi?',ctaLead:'Napisz gatunek, potrzebę i termin.',contactTitle:'Zapytaj o termin',contactLead:'Zostaw kontakt i kilka informacji.'}],
+    food:[{servicesTitle:'Smak, który ma swój charakter',servicesLead:'Oferta podana jasno, z naciskiem na to, po co klienci wracają.',ctaTitle:'Chcesz zarezerwować lub zamówić?',ctaLead:'Napisz, czego potrzebujesz.',contactTitle:'Skontaktuj się',contactLead:'Zostaw kontakt lub szczegóły zamówienia.'}],
+    fitness:[{servicesTitle:'Trening dopasowany do celu',servicesLead:'Najpierw cel i możliwości, potem konkretny plan działania.',ctaTitle:'Chcesz zacząć trenować?',ctaLead:'Napisz cel i dostępność.',contactTitle:'Umów konsultację',contactLead:'Zostaw kontakt i swój główny cel.'}],
+    general:[{servicesTitle:'Konkretnie o tym, co robimy',servicesLead:'Oferta opisana tak, żeby klient szybko wiedział, czy trafił dobrze.',ctaTitle:'Masz pytanie?',ctaLead:'Napisz, czego potrzebujesz.',contactTitle:'Zostaw kontakt',contactLead:'Wrócimy z konkretną odpowiedzią.'}]
+  };
+  const list=packs[cat]||packs.general;return list[n%list.length]
+}
     function initials(name='Firma'){return name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'F'}
     function slugify(s=''){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'').slice(0,28)||'twojafirma'}
     function domainIdeas(d){const base=slugify(d.company);const city=slugify(d.city);return [...new Set([`${base}.pl`,city?`${base}-${city}.pl`:null,`${base}24.pl`].filter(Boolean))]}
@@ -256,29 +433,11 @@ const msgs=document.getElementById('msgs');
 
     // ===== BeeFlow v11.1: bezpieczniejsza analiza branży + nazewnictwo =====
     function businessContext(d=chat.data){return [d.businessBrief,d.industry,d.services,d.usp].filter(Boolean).join(' ').toLowerCase()}
-    function deriveIndustryLabel(text=''){
-      const raw=String(text).trim(), x=raw.toLowerCase();
-      if(/opieka nad dzie|opiekuj\w*.*dziec|dziec.*opieka|nian|żłob|zlob|przedszkol|klub malucha|babysit/.test(x))return 'Opieka nad dziećmi';
-      if(/sprowadz|import(ujemy|uję|uje)? .*?(aut|samoch)|samochod.*z zagran|auta.*z zagran|handel.*(aut|samoch)|sprzedaż.*(aut|samoch)|sprzedaz.*(aut|samoch)|komis samoch/.test(x))return 'Import i sprzedaż samochodów';
-      if(/szklar|poliwęgl|poliwegl|greenhouse|tunel ogrod/.test(x))return 'Szklarnie ogrodowe';
-      if(/bram|ogrodz|furt/.test(x))return 'Bramy i ogrodzenia';
-      if(/detail|auto detailing|detailing samoch|korekt.*lakier|powłok.*ceram|powlok.*ceram|poler.*lakier/.test(x))return 'Detailing samochodowy';
-      if(/stomatolog|dentyst|gabinet stomat|higieniz|leczenie kanał|kanalow|wybielanie zęb|wybielanie zeb/.test(x))return 'Stomatologia';
-      if(/budowl|remont|wykończ|wykoncz|elewac|murarsk/.test(x))return 'Usługi budowlane';
-      if(/fryz|beauty|kosmet|paznok|manicure|brwi|rzęs|rzes|makija/.test(x))return 'Beauty';
-      if(/transport|przeprowad|kurier|dostaw/.test(x))return 'Transport';
-      if(/hydraul|wod-kan|ogrzew/.test(x))return 'Hydraulika i instalacje';
-      if(/elektryk|elektrycz|instalacja elek/.test(x))return 'Usługi elektryczne';
-      if(/klimatyz|wentyl/.test(x))return 'Klimatyzacja i wentylacja';
-      if(/sprząt|sprzatan|clean/.test(x))return 'Usługi sprzątające';
-      if(/mechanik|warsztat samoch|napraw.*samoch|serwis samoch/.test(x))return 'Serwis samochodowy';
-      if(/serwis rower|napraw.*rower|rowerow/.test(x))return 'Serwis rowerowy';
-      if(/fotograf|sesj.*zdję|sesj.*zdjec/.test(x))return 'Fotografia';
-      if(/księg|ksieg|rachunk/.test(x))return 'Księgowość';
-      const cleaned=raw.replace(/^(zajmuję się|zajmuje się|zajmujemy się|prowadzę|prowadze|prowadzimy|moja firma|firma|oferuję|oferuje|oferujemy)\s+/i,'').replace(/[.,;:!?]+$/g,'').trim();
-      const words=cleaned.replace(/[^\p{L}\p{N} -]/gu,' ').split(/\s+/).filter(Boolean).slice(0,6);
-      return words.length?words.join(' '):'Profesjonalne usługi';
-    }
+    function deriveIndustryLabel(text='',manual=false){
+  const detected=detectIndustry(text);
+  if(detected.confidence>0)return detected.label;
+  return manual?manualIndustryLabel(text):''
+}
     function industryLabel(industry=''){return deriveIndustryLabel(industry)}
     function businessFeatures(d=chat.data){
       const x=businessContext(d), f=[];
@@ -305,88 +464,87 @@ const msgs=document.getElementById('msgs');
       return 'Indywidualne wykonanie dopasowane do zlecenia';
     }
     function categoryKey(d=chat.data){
-      const x=businessContext(d);
-      if(/opieka nad dzie|opiekuj\w*.*dziec|dziec.*opieka|nian|żłob|zlob|przedszkol|klub malucha|babysit/.test(x))return 'childcare';
-      if(/import|sprowadz|sprzedaż samoch|sprzedaz samoch|handel aut|komis samoch|samochod.*z zagran/.test(x))return 'cartrade';
-      if(/szklar|poliwęgl|poliwegl|greenhouse|tunel ogrod/.test(x))return 'greenhouse';
-      if(/bram|ogrodz|furt/.test(x))return 'gates';
-      if(/detail|auto detailing|lakier|ceram|poler/.test(x))return 'auto';
-      if(/stomatolog|dentyst|gabinet stomat|higieniz|leczenie kanał|kanalow|wybielanie zęb|wybielanie zeb/.test(x))return 'dental';
-      if(/budowl|remont|wykończ|wykoncz|elewac|murarsk/.test(x))return 'build';
-      if(/fryz|beauty|kosmet|paznok|manicure|brwi|rzęs|rzes/.test(x))return 'beauty';
-      if(/transport|przeprowad|kurier|dostaw/.test(x))return 'transport';
-      return 'general'
-    }
+  const detected=detectIndustry(businessContext(d));
+  return detected.key||'general'
+}
     function areaCopy(d){return d.city?`${d.city} + okolice`:'Lokalnie i w okolicy'}
     function pickCopy(d,list,salt=''){return list[hashString(`${d.company||''}|${d.industry||''}|${d.city||''}|${salt}`)%list.length]}
     function heroTitle(d){
-      if((d.headline||'').trim())return d.headline.trim();
-      const cat=categoryKey(d), variants={
-        cartrade:['Auta z importu. Bez zgadywania.','Znajdź auto, które naprawdę ma sens.','Import samochodów z konkretnym planem.'],
-        greenhouse:['Szklarnia dopasowana do Twojego ogrodu.','Więcej sezonu. Więcej zbiorów.','Solidna konstrukcja. Jasny montaż.','Twoja szklarnia — gotowa na kolejne sezony.'],
-        gates:['Brama na wymiar. Bez kompromisów.','Od pomiaru do gotowej bramy.','Twój wjazd. Nasza stal. Gotowy efekt.','Bramy, które naprawdę pasują do posesji.'],
-        auto:['Auto, które znów robi wrażenie.','Efekt widać od pierwszego spojrzenia.','Czysto. Głęboko. Zabezpieczone.'],
-        dental:['Zdrowy uśmiech zaczyna się od dobrej diagnostyki.','Spokojna wizyta. Jasny plan leczenia.','Stomatologia bez zbędnego stresu.'],
-        build:['Konkretny zakres. Porządne wykonanie.','Od planu do gotowego efektu.','Remont bez chaosu i niedomówień.'],
-        beauty:['Efekt, po który chce się wracać.','Twój czas. Twój efekt.','Profesjonalnie, ale bez sztywnej atmosfery.'],
-        transport:['Dowozimy. Na czas. Bez komplikacji.','Transport, który po prostu działa.','Trasa ustalona. Ładunek zabezpieczony. Termin dotrzymany.'],
-        childcare:['Dobra opieka, kiedy Ty jesteś w pracy.','Bezpieczna opieka. Spokojniejszy dzień rodzica.','Miejsce, w którym dzieci czują się swobodnie.'],
-        general:[`${d.company||'Twoja firma'}. Konkret zamiast obietnic.`,`${d.company||'Twoja firma'} — dobry efekt zaczyna się od dobrych ustaleń.`,`Usługa dopasowana do Ciebie, nie odwrotnie.`]
-      };
-      return pickCopy(d,variants[cat]||variants.general,'hero')
-    }
+  if((d.headline||'').trim())return d.headline.trim();
+  const cat=categoryKey(d),variants={
+    cartrade:['Auta z importu. Bez zgadywania.','Znajdź auto, które naprawdę ma sens.','Import samochodów z konkretnym planem.'],
+    childcare:['Dobra opieka, kiedy Ty jesteś w pracy.','Bezpieczna opieka. Spokojniejszy dzień rodzica.','Miejsce, w którym dzieci czują się swobodnie.'],
+    greenhouse:['Szklarnia dopasowana do Twojego ogrodu.','Więcej sezonu. Więcej zbiorów.','Solidna konstrukcja. Jasny montaż.'],
+    gates:['Brama na wymiar. Bez kompromisów.','Od pomiaru do gotowej bramy.','Twój wjazd. Nasza stal. Gotowy efekt.'],
+    auto:['Auto, które znów robi wrażenie.','Efekt widać od pierwszego spojrzenia.','Czysto. Głęboko. Zabezpieczone.'],
+    dental:['Zdrowy uśmiech zaczyna się od dobrej diagnostyki.','Spokojna wizyta. Jasny plan leczenia.','Stomatologia bez zbędnego stresu.'],
+    build:['Konkretny zakres. Porządne wykonanie.','Od planu do gotowego efektu.','Remont bez chaosu i niedomówień.'],
+    beauty:['Efekt, po który chce się wracać.','Twój czas. Twój efekt.','Profesjonalnie, ale bez sztywnej atmosfery.'],
+    transport:['Dowozimy. Na czas. Bez komplikacji.','Transport, który po prostu działa.','Trasa ustalona. Termin dotrzymany.'],
+    plumbing:['Hydraulika bez zgadywania i niespodzianek.','Sprawna instalacja. Szybka pomoc.','Problem z wodą? Zacznijmy od diagnozy.'],
+    electrical:['Elektryka zrobiona bezpiecznie i konkretnie.','Od gniazdka po całą instalację.','Dobry prąd zaczyna się od dobrej instalacji.'],
+    hvac:['Komfortowa temperatura przez cały rok.','Klimatyzacja dobrana do Twojej przestrzeni.','Świeże powietrze. Dobry komfort.'],
+    cleaning:['Czystość, którą naprawdę widać.','Mniej sprzątania. Więcej czasu dla Ciebie.','Porządek bez tracenia dnia.'],
+    autoservice:['Diagnoza najpierw. Naprawa później.','Serwis auta bez niejasnych kosztów.','Twoje auto znów ma działać jak trzeba.'],
+    bicycle:['Rower gotowy na kolejną trasę.','Serwis, regulacja i spokojna jazda.','Naprawiamy. Regulujemy. Jedziesz dalej.'],
+    photo:['Zdjęcia, do których chce się wracać.','Dobry kadr zaczyna się od dobrej historii.','Twoja historia w dobrym świetle.'],
+    accounting:['Księgowość bez zbędnego chaosu.','Dokumenty pod kontrolą. Ty prowadzisz firmę.','Jasne liczby. Spokojniejszy biznes.'],
+    pet:['Dobra opieka dla Twojego pupila.','Twój pupil w dobrych rękach.','Usługa dopasowana do zwierzaka.'],
+    food:['Smak, po który chce się wracać.','Dobre jedzenie. Prosty wybór.','Tu zaczyna się apetyt.'],
+    fitness:['Trening z planem, nie przypadkiem.','Twój cel. Dobry plan. Regularny progres.','Forma budowana krok po kroku.'],
+    general:[`${d.company||'Twoja firma'}. Konkret zamiast obietnic.`,`${d.company||'Twoja firma'} — dobry efekt zaczyna się od dobrych ustaleń.`,`Usługa dopasowana do Ciebie, nie odwrotnie.`]
+  };return pickCopy(d,variants[cat]||variants.general,'hero')
+}
     function heroLead(d){
-      const cat=categoryKey(d), area=areaCopy(d), f=businessFeatures(d);
-      if(cat==='cartrade')return `Pomagamy znaleźć, sprowadzić i przygotować samochód zgodnie z ustalonym budżetem i oczekiwaniami. ${area}.`;
-      if(cat==='greenhouse')return `Szklarnie z poliwęglanu przygotowane pod konkretny ogród i sposób użytkowania. ${area}.`;
-      if(cat==='gates'){
-        if(f.includes('Własna produkcja'))return `Mierzymy, projektujemy i wykonujemy u siebie. ${area}.`;
-        return `Pomiar, wykonanie i montaż pod konkretny wjazd. ${area}.`;
-      }
-      if(cat==='auto')return `Dobieramy usługę do stanu auta i efektu, którego oczekujesz. ${area}.`;
-      if(cat==='dental')return `Diagnoza, zrozumiałe wyjaśnienie możliwości i leczenie dopasowane do potrzeb pacjenta. ${area}.`;
-      if(cat==='build')return `Najpierw zakres i wycena. Potem sprawna realizacja bez zgadywania. ${area}.`;
-      if(cat==='transport')return `Podajesz trasę i ładunek. My ustalamy termin i konkretną cenę. ${area}.`;
-      if(cat==='beauty')return `Wybierasz efekt. My dobieramy usługę i dogodny termin. ${area}.`;
-      if(cat==='childcare')return `Zapewniamy dzieciom bezpieczną, uważną opiekę w czasie, gdy rodzice są w pracy lub mają inne obowiązki. ${area}.`;
-      return `Krótka rozmowa, jasny zakres i konkretny kolejny krok. ${area}.`
-    }
+  const cat=categoryKey(d),area=areaCopy(d),m={
+    cartrade:`Pomagamy znaleźć i sprowadzić samochód zgodnie z budżetem i wymaganiami. ${area}.`,
+    childcare:`Zapewniamy dzieciom bezpieczną, uważną opiekę, kiedy rodzice są w pracy lub mają inne obowiązki. ${area}.`,
+    greenhouse:`Szklarnie z poliwęglanu przygotowane pod konkretny ogród i sposób użytkowania. ${area}.`,
+    gates:`Pomiar, wykonanie i montaż pod konkretny wjazd. ${area}.`,
+    auto:`Dobieramy usługę do stanu auta i efektu, którego oczekujesz. ${area}.`,
+    dental:`Diagnoza, jasne wyjaśnienie możliwości i leczenie dopasowane do potrzeb pacjenta. ${area}.`,
+    beauty:`Wybierasz efekt. My dobieramy usługę i dogodny termin. ${area}.`,
+    build:`Najpierw zakres i wycena. Potem sprawna realizacja. ${area}.`,
+    transport:`Podajesz trasę i ładunek. My ustalamy termin i konkretną cenę. ${area}.`,
+    plumbing:`Naprawy i instalacje z jasno ustalonym zakresem. ${area}.`,
+    electrical:`Instalacje i naprawy elektryczne z naciskiem na bezpieczeństwo. ${area}.`,
+    hvac:`Dobór, montaż i serwis urządzeń dopasowanych do pomieszczenia. ${area}.`,
+    cleaning:`Sprzątanie dopasowane do miejsca, zakresu i terminu. ${area}.`,
+    autoservice:`Najpierw ustalamy problem, potem zakres naprawy. ${area}.`,
+    bicycle:`Serwis i regulacja dopasowane do stanu roweru. ${area}.`,
+    photo:`Sesje dopasowane do okazji, miejsca i efektu, którego oczekujesz. ${area}.`,
+    accounting:`Obsługa księgowa dopasowana do rodzaju działalności. ${area}.`,
+    pet:`Zakres usługi dopasowany do zwierzęcia i jego potrzeb. ${area}.`,
+    food:`Oferta podana jasno, z naciskiem na jakość i wygodny kontakt. ${area}.`,
+    fitness:`Trening dopasowany do celu, możliwości i rytmu dnia. ${area}.`
+  };return m[cat]||`Krótka rozmowa, jasny zakres i konkretny kolejny krok. ${area}.`
+}
     function serviceDesc(name,industry=''){
-      const n=String(name).toLowerCase(), ctx=(n+' '+String(industry).toLowerCase());
-      if(/opieka|dziec|nian|żłob|zlob|przedszkol|zabawy|zajęcia|zajecia/.test(n)&&/opieka nad dzie|dziec|nian|żłob|zlob|przedszkol|klub malucha/.test(ctx))return 'Zapewniamy dzieciom uważną opiekę, bezpieczne warunki i zajęcia dopasowane do wieku oraz rytmu dnia.';
-      if(/sprowadz|import/.test(n))return 'Szukamy i sprowadzamy samochód zgodnie z ustalonym budżetem, wymaganiami i kierunkiem zakupu.';
-      if(/sprzedaż|sprzedaz|dobór auta|dobor auta|wyszukiwanie auta/.test(n)&&/samoch|aut/.test(ctx))return 'Pomagamy dobrać samochód do potrzeb i jasno przejść przez kolejne etapy zakupu.';
-      if(/weryfik|sprawdzen/.test(n)&&/samoch|aut/.test(ctx))return 'Sprawdzamy najważniejsze informacje o aucie przed decyzją, żeby ograniczyć ryzyko nietrafionego zakupu.';
-      if(/szklar|poliwęgl|poliwegl/.test(n))return 'Przygotowujemy konstrukcję i poszycie tak, żeby szklarnia była trwała, praktyczna i łatwa w użytkowaniu.';
-      if(/konserw/.test(n)&&/szklar|poliwęgl|poliwegl/.test(ctx))return 'Sprawdzamy konstrukcję, łączenia i poszycie, żeby szklarnia była gotowa na kolejny sezon.';
-      if(/samodziel|skręc|skrec/.test(n))return 'Przygotowujemy komplet elementów do samodzielnego montażu z czytelnym podziałem i dopasowaniem części.';
-      if(/spawan|spaw/.test(n)&&/szklar|poliwęgl|poliwegl/.test(ctx))return 'Spawamy konstrukcję szklarni pod wymiar, tak żeby całość była sztywna i dobrze dopasowana do wybranego formatu.';
-      if(/spawan|spaw/.test(n))return 'Spawamy konstrukcję pod ustalony wymiar i sposób użytkowania.';
-      if(/bram.*przesuw|przesuw.*bram/.test(ctx))return 'Dobieramy skrzydło, przeciwwagę i prowadzenie dokładnie do Twojego wjazdu.';
-      if(/bram/.test(n))return 'Projektujemy i wykonujemy bramę tak, żeby dobrze wyglądała i wygodnie działała.';
-      if(/ogrodz/.test(n))return 'Dopasowujemy ogrodzenie do posesji, bramy i oczekiwanego poziomu prywatności.';
-      if(/furt/.test(n))return 'Furtka w tym samym stylu, z dobrym dopasowaniem i wygodnym użytkowaniem.';
-      if(/malow|lakier|proszk/.test(n))return 'Zabezpieczamy stal i nadajemy jej estetyczne wykończenie na lata.';
-      if(/montaż|montaz/.test(n))return 'Montujemy, regulujemy i sprawdzamy całość przed odbiorem.';
-      if(/transport|dowóz|dowoz|dostaw/.test(n))return 'Dostarczamy gotowe elementy bezpiecznie na miejsce montażu.';
-      if(/pomiar/.test(n))return 'Przyjeżdżamy, mierzymy i sprawdzamy warunki jeszcze przed produkcją.';
-      if(/projekt|wizual/.test(n))return 'Twój pomysł przekładamy na rozwiązanie, które da się dobrze wykonać.';
-      if(/automat|napęd|naped/.test(n))return 'Dobieramy napęd do bramy i konfigurujemy go po montażu.';
-      if(/ceram/.test(n))return 'Zabezpieczamy lakier i wydobywamy głębię koloru na dłużej.';
-      if(/poler|korekt/.test(n))return 'Usuwamy widoczne niedoskonałości i przywracamy lakierowi głębię.';
-      if(/pran|wnętr|wnetr/.test(n))return 'Czyścimy wnętrze dokładnie, z metodą dobraną do materiału.';
-      if(/przegląd|przeglad|konsult/.test(n)&&/stomatolog|dent|zęb|zeb/.test(ctx))return 'Sprawdzamy stan jamy ustnej i jasno omawiamy, co warto zrobić dalej.';
-      if(/higieniz|skaling|piaskow/.test(n))return 'Dokładnie usuwamy osad i kamień, pomagając zadbać o zdrowie dziąseł i świeży uśmiech.';
-      if(/wybiel/.test(n)&&/ząb|zab|zęb|zeb/.test(n))return 'Dobieramy bezpieczną metodę wybielania do stanu zębów i oczekiwanego efektu.';
-      if(/kanał|kanal/.test(n))return 'Leczymy ząb precyzyjnie, z jasnym omówieniem kolejnych etapów terapii.';
-      if(/manicure|hybryd/.test(n))return 'Starannie opracowujemy paznokcie i dobieramy stylizację do efektu, który chcesz uzyskać.';
-      if(/paznok|żel|zel/.test(n))return 'Budujemy estetyczną i trwałą stylizację dopasowaną do dłoni i Twojego stylu.';
-      if(/laminac.*brwi|brwi.*laminac/.test(n))return 'Układamy i podkreślamy brwi tak, aby efekt był naturalny i łatwy w codziennym utrzymaniu.';
-      if(/regulac.*brwi|brwi.*regulac/.test(n))return 'Nadajemy brwiom kształt dopasowany do rysów twarzy i oczekiwanego efektu.';
-      if(/rzęs|rzes/.test(n))return 'Dobieramy stylizację do oka i efektu, który chcesz osiągnąć — od naturalnego po bardziej wyrazisty.';
-      if(/remont|wykończ|wykoncz/.test(n))return 'Ustalamy zakres przed startem i prowadzimy prace krok po kroku.';
-      return 'Krótko wyjaśniamy zakres usługi, ustalamy potrzeby i proponujemy konkretny następny krok.'
-    }
+  const n=intentText(name),ctx=intentText(name+' '+industry),cat=detectIndustry(ctx).key;
+  if(cat==='childcare')return 'Zakres opieki dopasowujemy do wieku dziecka, godzin i potrzeb rodziny, z jasnym kontaktem z rodzicem.';
+  if(cat==='cartrade'&&/(import|sprowadz)/.test(n))return 'Szukamy i sprowadzamy samochód zgodnie z budżetem, wymaganiami i ustalonym procesem.';
+  if(cat==='cartrade')return 'Pomagamy przejść przez kolejne etapy wyboru i zakupu samochodu bez przypadkowych decyzji.';
+  if(cat==='greenhouse')return 'Rozwiązanie dobieramy do wymiaru, sposobu użytkowania i oczekiwanego wariantu montażu.';
+  if(cat==='dental')return 'Zakres wizyty dobieramy do potrzeb pacjenta i jasno omawiamy kolejne kroki.';
+  if(cat==='beauty')return 'Usługę i efekt dobieramy do Twoich oczekiwań, z naciskiem na estetykę i komfort.';
+  if(cat==='plumbing')return 'Najpierw ustalamy problem lub zakres instalacji, potem proponujemy konkretny sposób wykonania.';
+  if(cat==='electrical')return 'Zakres prac dobieramy do instalacji i potrzeb, z naciskiem na bezpieczne wykonanie.';
+  if(cat==='hvac')return 'Dobieramy rozwiązanie do kubatury, sposobu użytkowania i oczekiwanego komfortu.';
+  if(cat==='cleaning')return 'Zakres sprzątania ustalamy do miejsca, stopnia zabrudzenia i oczekiwanego terminu.';
+  if(cat==='autoservice')return 'Najpierw diagnoza i zakres, potem uzgodniona naprawa bez niepotrzebnych niespodzianek.';
+  if(cat==='bicycle')return 'Sprawdzamy rower, ustalamy zakres i wykonujemy serwis potrzebny do bezpiecznej jazdy.';
+  if(cat==='photo')return 'Zakres sesji dopasowujemy do okazji, miejsca, stylu i oczekiwanego efektu.';
+  if(cat==='accounting')return 'Zakres obsługi dopasowujemy do formy działalności i potrzeb przedsiębiorcy.';
+  if(cat==='pet')return 'Usługę dopasowujemy do zwierzęcia, jego charakteru i konkretnej potrzeby.';
+  if(cat==='food')return 'Oferta opisana jasno, żeby klient szybko wiedział, czego może się spodziewać.';
+  if(cat==='fitness')return 'Plan dopasowujemy do celu, poziomu startowego i realnej dostępności na treningi.';
+  if(/bram.*przesuw|przesuw.*bram/.test(ctx))return 'Dobieramy skrzydło, przeciwwagę i prowadzenie dokładnie do Twojego wjazdu.';
+  if(cat==='gates')return 'Konstrukcję i wykonanie dopasowujemy do wymiaru, posesji i sposobu użytkowania.';
+  if(cat==='auto')return 'Zakres usługi dobieramy do stanu auta i efektu, który chcesz osiągnąć.';
+  if(cat==='build')return 'Zakres prac ustalamy przed startem, żeby kolejne etapy były jasne i przewidywalne.';
+  if(cat==='transport')return 'Ustalamy trasę, rodzaj ładunku i termin, a potem podajemy konkretny kolejny krok.';
+  return 'Zakres usługi ustalamy indywidualnie, żeby klient od początku wiedział, co obejmuje realizacja.'
+}
     function aboutCopy(d){
       const cat=categoryKey(d), f=businessFeatures(d), area=areaCopy(d), name=d.company||'Nasza firma';
       if(cat==='cartrade')return `${name} zajmuje się importem i sprzedażą samochodów. Pomagamy przejść od wyboru auta do jego sprowadzenia i przygotowania do odbioru. ${area}.`;
@@ -430,38 +588,59 @@ const msgs=document.getElementById('msgs');
       return cards.slice(0,4)
     }
 
-    // Chat v9: opis firmy jest materiałem roboczym, a nie tekstem do wklejenia 1:1.
+    // Chat v12: opis firmy jest materiałem roboczym, a nie tekstem do wklejenia 1:1.
     function fieldLabel(key){return ({company:'nazwa firmy',businessBrief:'opis firmy do analizy',industry:'branża / kategoria',city:'obszar działania',services:'usługi',style:'styl strony',usp:'wyróżnik firmy',phone:'telefon',email:'e-mail'})[key]||key}
     function commitPending(){
-      const key=chat.pendingKey,value=chat.pendingValue;
-      if(key==='businessBrief'){chat.data.businessBrief=value;chat.data.industry=deriveIndustryLabel(value)}else if(key==='industry'){chat.data.industry=deriveIndustryLabel(value)}else chat.data[key]=value;
-      chat.pendingKey=null;chat.pendingValue='';chat.phase='ask';
-      const advancesCurrent=questions[chat.step]&&questions[chat.step].key===key;if(advancesCurrent)chat.step++;
-      if(key==='company')chat.needsName=false;
-      if((key==='businessBrief'||key==='industry')&&chat.needsName){setTimeout(confirmDetectedIndustry,180);return}
-      if(chat.step>=questions.length){setTimeout(startExtras,180);return}
-      setTimeout(askCurrent,180)
-    }
+  const key=chat.pendingKey,value=chat.pendingValue;
+  if(key==='businessBrief'){
+    chat.data.businessBrief=value;chat.data.industry='';chat.industryConfirmed=false
+  }else if(key==='industry'){
+    chat.data.industry=deriveIndustryLabel(value,true);chat.industryConfirmed=true
+  }else chat.data[key]=value;
+  chat.pendingKey=null;chat.pendingValue='';chat.phase='ask';
+  const advancesCurrent=questions[chat.step]&&questions[chat.step].key===key;if(advancesCurrent)chat.step++;
+  if(key==='company')chat.needsName=false;
+  if(key==='businessBrief'){setTimeout(confirmDetectedIndustry,180);return}
+  if(key==='industry'&&chat.needsName){setTimeout(offerNameSuggestion,180);return}
+  if(chat.step>=questions.length){setTimeout(startExtras,180);return}
+  setTimeout(askCurrent,180)
+}
     function handleConfirmation(answerText){
-      if(chat.phase!=='confirm')return;
-      if(answerText==='yes'||isYes(answerText)){commitPending();return}
-      chat.phase='ask';const key=chat.pendingKey;chat.pendingValue='';
-      if(key==='company'){
-        if(!chat.data.businessBrief){chat.needsName=true;chat.step=1;ai('Jasne. Najpierw poznam firmę, żeby kolejna nazwa miała sens. Opis wykorzystam tylko do analizy — nie wkleję go później 1:1 na stronę.');setTimeout(askCurrent,180);return}
-        chat.nameRound++;offerNameSuggestion(true);return
-      }
-      ai(`Jasne. Poprawmy ${fieldLabel(key)}. Napisz właściwą wersję, a najpierw ją potwierdzę.`)
+  if(chat.phase!=='confirm')return;
+  if(answerText==='yes'||isYes(answerText)){commitPending();return}
+  chat.phase='ask';const key=chat.pendingKey;chat.pendingValue='';
+  if(key==='company'){
+    if(chat.needsName || !chat.data.businessBrief){
+      chat.needsName=true;
+      const briefIndex=questions.findIndex(q=>q.key==='businessBrief');
+      if(briefIndex>=0)chat.step=briefIndex;
+      ai('Jasne. Nie zapisuję tej nazwy. Najpierw poznam firmę, a potem zaproponuję kolejną nazwę dopasowaną do branży.');setTimeout(askCurrent,180);return
     }
+    chat.nameRound++;offerNameSuggestion(true);return
+  }
+  ai(`Jasne. Poprawmy ${fieldLabel(key)}. Napisz właściwą wersję, a najpierw ją potwierdzę.`)
+}
     function detectGlobalCorrection(t){
-      const x=t.toLowerCase();if(/inna\s+nazwa|zmień\s+nazw|zmien\s+nazw|nie.*nazwa/.test(x)){chat.nameRound++;offerNameSuggestion(true);return true}
-      const map=[['miast','city'],['obszar','city'],['usług','services'],['styl','style'],['telefon','phone'],['mail','email'],['e-mail','email'],['wyróż','usp'],['opis firmy','businessBrief'],['branż','businessBrief']];
-      for(const [needle,key] of map){if((x.includes('zmień')||x.includes('zmien')||x.includes('popraw'))&&x.includes(needle)){chat.phase='ask';chat.pendingKey=key;chat.step=Math.max(0,questions.findIndex(q=>q.key===key));ai(`Okej — wracamy do pola „${fieldLabel(key)}”. Podaj nową wersję.`);return true}}return false
-    }
+  if(isNoName(t))return false;
+  const x=intentText(t);
+  if(/(inna nazwa|inny pomysl|zmien nazwe|popraw nazwe|nazwa nie pasuje|nie podoba mi sie nazwa)/.test(x)){
+    chat.nameRound++;offerNameSuggestion(true);return true
+  }
+  const wantsChange=/\b(zmien|popraw|zmodyfikuj|wroc)\b/.test(x);
+  if(!wantsChange)return false;
+  const map=[['miast','city'],['obszar','city'],['uslug','services'],['styl','style'],['telefon','phone'],['mail','email'],['email','email'],['wyrozn','usp'],['opis firm','businessBrief'],['branz','businessBrief']];
+  for(const [needle,key] of map){if(x.includes(needle)){
+    chat.phase='ask';chat.pendingKey=key;chat.pendingValue='';
+    const idx=questions.findIndex(q=>q.key===key);if(idx>=0)chat.step=idx;
+    ai(`Okej — wracamy do pola „${fieldLabel(key)}”. Podaj nową wersję.`);return true
+  }}
+  return false
+}
 
-    function actionLabel(d){const cat=categoryKey(d);if(cat==='dental'||cat==='beauty')return 'Umów wizytę';if(cat==='childcare')return 'Zapytaj o miejsce';if(cat==='auto')return 'Zapytaj o termin';if(cat==='transport')return 'Sprawdź termin i cenę';return 'Poproś o wycenę'}
-    function formTitleCopy(d){const cat=categoryKey(d);if(cat==='dental')return 'Umów wizytę lub konsultację';if(cat==='beauty')return 'Umów wizytę';if(cat==='childcare')return 'Zapytaj o opiekę i dostępność';if(cat==='auto')return 'Zapytaj o termin i zakres';return 'Poproś o bezpłatną wycenę'}
-    function formIntroCopy(d){const cat=categoryKey(d);if(cat==='dental')return 'Zostaw kontakt i krótko napisz, z czym się zgłaszasz.';if(cat==='beauty')return 'Zostaw kontakt i napisz, jaka usługa Cię interesuje.';if(cat==='childcare')return 'Zostaw kontakt i napisz, w jakich dniach lub godzinach potrzebujesz opieki.';return 'Zostaw kontakt i krótko opisz, czego potrzebujesz.'}
-    function messageLabelCopy(d){const cat=categoryKey(d);if(cat==='dental')return 'Z czym się zgłaszasz?';if(cat==='beauty')return 'Jaki efekt lub usługę wybierasz?';if(cat==='childcare')return 'Jakiej opieki potrzebujesz?';return 'Krótki opis zlecenia'}
+    function actionLabel(d){const cat=categoryKey(d);if(cat==='dental'||cat==='beauty')return 'Umów wizytę';if(cat==='childcare')return 'Zapytaj o miejsce';if(cat==='auto'||cat==='autoservice'||cat==='bicycle'||cat==='pet')return 'Zapytaj o termin';if(cat==='transport')return 'Sprawdź termin i cenę';if(cat==='photo'||cat==='fitness'||cat==='accounting'||cat==='hvac')return 'Umów konsultację';if(cat==='food')return 'Skontaktuj się';return 'Poproś o wycenę'}
+    function formTitleCopy(d){const cat=categoryKey(d);if(cat==='dental'||cat==='beauty')return 'Umów wizytę';if(cat==='childcare')return 'Zapytaj o opiekę i dostępność';if(cat==='auto'||cat==='autoservice'||cat==='bicycle'||cat==='pet')return 'Zapytaj o termin i zakres';if(cat==='photo'||cat==='fitness'||cat==='accounting'||cat==='hvac')return 'Umów konsultację';return 'Poproś o bezpłatną wycenę'}
+    function formIntroCopy(d){const cat=categoryKey(d);if(cat==='dental')return 'Zostaw kontakt i krótko napisz, z czym się zgłaszasz.';if(cat==='beauty')return 'Zostaw kontakt i napisz, jaka usługa Cię interesuje.';if(cat==='childcare')return 'Zostaw kontakt i napisz, w jakich dniach lub godzinach potrzebujesz opieki.';if(cat==='autoservice'||cat==='bicycle')return 'Zostaw kontakt i krótko opisz problem.';if(cat==='photo')return 'Zostaw kontakt, termin i rodzaj sesji.';return 'Zostaw kontakt i krótko opisz, czego potrzebujesz.'}
+    function messageLabelCopy(d){const cat=categoryKey(d);if(cat==='dental')return 'Z czym się zgłaszasz?';if(cat==='beauty')return 'Jaki efekt lub usługę wybierasz?';if(cat==='childcare')return 'Jakiej opieki potrzebujesz?';if(cat==='autoservice'||cat==='bicycle')return 'Co się dzieje?';if(cat==='photo')return 'Jaki rodzaj sesji planujesz?';return 'Krótki opis potrzeby'}
     function highlightClaim(d){const cat=categoryKey(d),f=businessFeatures(d);if(cat==='dental')return 'Spokojne podejście i jasny plan leczenia';if(cat==='beauty')return 'Higiena, estetyka i efekt dopasowany do Ciebie';if(cat==='childcare')return 'Bezpieczna opieka i dobry kontakt z rodzicem';return f[0]||cleanUsp(d.usp)||'Dobra realizacja zaczyna się od dobrych ustaleń.'}
 
     function renderDemo(save=false){

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#090b0e" />
   <title>BeeFlow AI — Twoja firma online, zbudowana mądrzej</title>
   <meta name="description" content="Opisz swoją firmę, a BeeFlow AI przygotuje profesjonalne demo strony, treści, galerię i narzędzia do zbierania klientów." />
-  <link rel="stylesheet" href="styles.css?v=11.2" />
+  <link rel="stylesheet" href="styles.css?v=12.0" />
 </head>
 <body class="v11-home">
   <div class="ambient ambient-one"></div>
@@ -118,27 +118,27 @@
     </section>
   </main>
 
-  <footer class="footer-v11"><div class="wrap footer-inner"><div><a href="#top" class="brand"><span class="bee">B</span><span>BeeFlow <em>AI</em></span></a><p>Robocza nazwa projektu. Inteligentne strony i automatyzacja dla małych firm.</p></div><div class="footer-links"><a href="#jak">Jak działa</a><a href="#mozliwosci">Możliwości</a><a href="#cennik">Cennik</a><a href="#faq">FAQ</a></div><div class="footer-meta">© 2026 BeeFlow AI<br><span>Wersja rozwojowa v11</span></div></div></footer>
+  <footer class="footer-v11"><div class="wrap footer-inner"><div><a href="#top" class="brand"><span class="bee">B</span><span>BeeFlow <em>AI</em></span></a><p>Robocza nazwa projektu. Inteligentne strony i automatyzacja dla małych firm.</p></div><div class="footer-links"><a href="#jak">Jak działa</a><a href="#mozliwosci">Możliwości</a><a href="#cennik">Cennik</a><a href="#faq">FAQ</a></div><div class="footer-meta">© 2026 BeeFlow AI<br><span>Wersja rozwojowa v12</span></div></div></footer>
 
   <a class="chatbtn js-open-chat" href="#chatbox" aria-label="Otwórz czat" role="button">💬</a>
   <div class="chatBackdrop" id="chatBackdrop" aria-hidden="true"></div>
   <div class="chatbox" id="chatbox" role="dialog" aria-modal="true" aria-label="Kreator strony BeeFlow AI" aria-hidden="true">
-    <div class="chathead"><div><b>BeeFlow AI</b><div class="statusline"><span class="dot"></span> Kreator strony demo</div></div><a class="close" id="chatClose" href="#" aria-label="Zamknij czat">×</a></div>
+    <div class="chathead"><div><b>BeeFlow AI</b><div class="statusline"><span class="dot"></span> Kreator strony demo</div></div><div class="chatHeadActions"><button type="button" class="chatReset" id="chatReset" title="Zacznij od nowa" aria-label="Zacznij projekt od nowa">↻</button><a class="close" id="chatClose" href="#" aria-label="Zamknij czat">×</a></div></div>
     <div class="progressWrap"><div class="progressBar"><div class="progressFill" id="progressFill"></div></div><div class="progressText" id="progressText">Krok 1 z 8</div></div>
     <noscript><div class="noJsNotice">Ta przeglądarka blokuje skrypty potrzebne do działania kreatora. Otwórz BeeFlow w Safari/Chrome przez normalny adres HTTPS.</div></noscript>
     <div class="msgs" id="msgs"></div>
     <div class="mini">Demo lokalne — dane pozostają w tej przeglądarce.</div>
-    <form class="inputrow" id="chatForm"><input id="chatInput" autocomplete="off" enterkeyhint="send" placeholder="Napisz odpowiedź..."><button class="send" type="submit" aria-label="Wyślij wiadomość">➤</button></form>
+    <form class="inputrow" id="chatForm"><input id="chatInput" autocomplete="off" enterkeyhint="send" maxlength="600" placeholder="Napisz odpowiedź..."><button class="send" type="submit" aria-label="Wyślij wiadomość">➤</button></form>
   </div>
 
   <div class="previewOverlay" id="previewOverlay" aria-hidden="true">
     <div class="previewShell" id="previewShell">
       <div class="previewTop">
         <div class="previewTopMeta"><span class="previewLiveBadge">DEMO</span><div><b>Podgląd strony klienta</b><small>Nieopublikowana wersja demonstracyjna BeeFlow AI</small></div></div>
-        <div class="previewActions"><button id="liveEditBtn">✎ Edytuj na żywo</button><button id="backToChat">← Wróć do kreatora</button><button style="background:#f5b800" id="choosePlan">Uruchom tę stronę</button></div>
+        <div class="previewActions"><button type="button" id="liveEditBtn">✎ Edytuj na żywo</button><button type="button" id="backToChat">← Wróć do kreatora</button><button style="background:#f5b800" id="choosePlan">Uruchom tę stronę</button></div>
       </div>
       <aside class="liveEditor" id="liveEditor" aria-hidden="true">
-        <div class="liveEditorHead"><div><b>Edytuj stronę na żywo</b><small>Zmiany pojawiają się od razu w demo</small></div><button id="closeLiveEditor">×</button></div>
+        <div class="liveEditorHead"><div><b>Edytuj stronę na żywo</b><small>Zmiany pojawiają się od razu w demo</small></div><button type="button" id="closeLiveEditor">×</button></div>
         <div class="liveEditorBody">
           <label>Nazwa firmy<input id="editCompany"></label>
           <label>Branża / kategoria strony<input id="editIndustry"></label>
@@ -146,8 +146,8 @@
           <label>Usługi<textarea id="editServices" rows="4" placeholder="Oddziel przecinkami"></textarea></label>
           <label>Najmocniejszy argument<textarea id="editUsp" rows="3"></textarea></label>
           <label>Własny nagłówek <span>(opcjonalnie)</span><textarea id="editHeadline" rows="2" placeholder="Zostaw puste — BeeFlow napisze go automatycznie"></textarea></label>
-          <label>Telefon<input id="editPhone"></label>
-          <label>E-mail<input id="editEmail"></label>
+          <label>Telefon<input id="editPhone" inputmode="tel"></label>
+          <label>E-mail<input id="editEmail" inputmode="email"></label>
           <label>Styl<select id="editStyle"><option>Ciemna i premium</option><option>Jasna i nowoczesna</option><option>Mocna i sportowa</option><option>Elegancka i spokojna</option></select></label>
           <div class="editorUpload"><b style="font-size:12px">Logo</b><div class="logoActions"><button class="logoAction" type="button" id="editUploadLogoBtn">Wgraj własne</button><button class="logoAction primary" type="button" id="regenLogoBtn">✨ Wygeneruj nowe</button></div><input id="editLogoFile" type="file" accept="image/*" style="display:none"><div id="editorLogoIdeas" class="logoIdeas"></div><div class="mobileNote">W tej wersji demo BeeFlow tworzy warianty lokalnie. Po podpięciu właściwego AI przycisk będzie generował unikalne logo na podstawie opisu firmy.</div></div>
           <label>Dodatkowe sekcje / uwagi<textarea id="editExtras" rows="3" placeholder="Np. FAQ, cennik, opinie klientów"></textarea></label>
@@ -160,7 +160,7 @@
     </div>
     <div class="lightbox" id="lightbox" aria-hidden="true"><div class="lbTop"><div class="lbTopMeta"><b id="lbTitle">Galeria</b><span class="lbCounter" id="lbCounter">1 / 1</span></div><button class="lbClose" id="lbClose" aria-label="Zamknij galerię">×</button></div><div class="lbStage" id="lbStage"><button class="lbNav lbPrev" id="lbPrev" aria-label="Poprzednie zdjęcie">‹</button><img id="lbImg" alt="Powiększone zdjęcie"><button class="lbNav lbNext" id="lbNext" aria-label="Następne zdjęcie">›</button></div><div class="lbBottom"><div class="lbCaption" id="lbCaption"></div><div class="lbThumbs" id="lbThumbs"></div></div></div>
   </div>
-  <script src="config.js?v=11.2" defer></script>
-  <script src="app.js?v=11.3" defer></script>
+  <script src="config.js?v=12.0" defer></script>
+  <script src="app.js?v=12.0" defer></script>
 </body>
 </html>
