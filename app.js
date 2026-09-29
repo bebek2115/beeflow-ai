@@ -188,17 +188,68 @@ function manualIndustryLabel(text=''){
     
     
 
+    function meaningfulWords(text=''){
+  const stop=new Set(['firma','firmy','uslugi','usluga','lokalnie','lokalna','lokalny','klient','klienta','klientow','robimy','robie','robic','zajmuje','zajmujemy','sie','oraz','i','w','we','na','do','dla','od','po','pod','z','ze','czy','ktory','ktora','ktore','jak','jest','sa','mamy','mam','oferujemy','oferuje','wykonujemy','wykonuje','pomagamy','pomagam','sprzedajemy','sprzedaje','prowadzimy','prowadze']);
+  return intentText(text).split(' ').filter(w=>w.length>=4&&!stop.has(w)).slice(0,6)
+}
+    function brandStem(word=''){
+  const map={
+    dzieci:'Mali',dziecko:'Mali',opieka:'Tuli',samochod:'Auto',samochody:'Auto',auta:'Auto',import:'Moto',
+    szklarnie:'Green',szklarnia:'Green',ogrodowe:'Garden',ogrod:'Garden',bramy:'Stal',brama:'Stal',ogrodzenia:'Stal',
+    paznokcie:'Nail',kosmetyka:'Glow',kosmetyczne:'Glow',stomatologia:'Dent',dentysta:'Dent',fotografia:'Kadr',
+    transport:'Cargo',przeprowadzki:'Move',hydraulika:'Hydro',elektryka:'Volt',klimatyzacja:'Clima',
+    sprzatanie:'Clean',czyszczenie:'Clean',mechanika:'Moto',rowery:'Velo',ksiegowosc:'Saldo',zwierzeta:'Pet',
+    gastronomia:'Smak',trening:'Fit',fitness:'Fit',remonty:'Build',budowlane:'Build',montaz:'Forma',
+    meble:'Mebel',stolarstwo:'Wood',dachy:'Dach',dach:'Dach',brukowa:'Bruk',bruk:'Bruk',kostki:'Bruk',
+    ogrody:'Garden',rolety:'Rolo',okna:'Okno',drzwi:'Door',spawanie:'Forge',stalowe:'Stal'
+  };
+  if(map[word])return map[word];
+  const cleaned=String(word).replace(/[^a-z0-9]/g,'');
+  if(!cleaned)return '';
+  const stem=cleaned.length>8?cleaned.slice(0,7):cleaned;
+  return stem.charAt(0).toUpperCase()+stem.slice(1)
+}
+    function contextualNameSuggestions(){
+  const ctx=[chat.data.industry,chat.data.businessBrief,chat.data.services].filter(Boolean).join(' ');
+  const detected=detectIndustry(ctx);
+  if(INDUSTRY_PROFILES[detected.key])return INDUSTRY_PROFILES[detected.key].names.slice();
+
+  const words=meaningfulWords(ctx), stems=[...new Set(words.map(brandStem).filter(Boolean))];
+  if(!stems.length)return [];
+  const a=stems[0],b=stems[1]||'';
+  const pool=[
+    b?`${a}${b}`:'',
+    `${a}Pro`,
+    `${a}Studio`,
+    `${a}Lab`,
+    b?`${a}${b}Pro`:'',
+    `Nova${a}`,
+    `${a}Point`,
+    `${a}One`
+  ].filter(Boolean);
+  return [...new Set(pool)].slice(0,8)
+}
     function nameTokens(industry=''){
-  const detected=detectIndustry(industry||chat.data.businessBrief||'');
-  return (INDUSTRY_PROFILES[detected.key]&&INDUSTRY_PROFILES[detected.key].names)||['Nexa','VeroPoint','NovaForma','Primeo','Noviq','FormaOne']
+  return contextualNameSuggestions()
 }
     function scoreName(name){let score=7;const len=name.replace(/\s/g,'').length;if(len>=6&&len<=12)score+=1;if(!/[0-9]/.test(name))score+=.5;if(name.split(/\s+/).length<=2)score+=.5;return Math.min(9.5,score).toFixed(1)}
-    function nameReason(name){const parts=[];if(name.length<15)parts.push('krótka');if(name.split(/\s+/).length<=2)parts.push('łatwa do zapamiętania');parts.push('nadaje się do logo i domeny');return parts.join(', ')}
+    function nameReason(name){
+  const detected=detectIndustry(businessContext(chat.data));
+  const label=detected.confidence?detected.label:(chat.data.industry||'profilu firmy');
+  return `nawiązuje do profilu firmy (${label}), jest krótka i nadaje się do logo`
+}
     function offerNameSuggestion(forceAlternative=false){
   chat.phase='naming';chat.needsName=true;
-  const list=nameTokens(chat.data.industry);const idx=(chat.nameRound++)%list.length;
+  const list=nameTokens(chat.data.industry);
+  if(!list.length){
+    chat.phase='industry-manual';
+    ai('Nie chcę rzucać przypadkową nazwą. Żeby nazwa naprawdę pasowała do firmy, napisz proszę w 2–6 słowach konkretną branżę lub główną usługę, np. „czyszczenie kostki brukowej”, „opieka nad dziećmi”, „import aut”.');
+    return
+  }
+  const idx=(chat.nameRound++)%list.length;
   let proposed=list[idx];if(proposed===chat.lastSuggestedName)proposed=list[(idx+1)%list.length];chat.lastSuggestedName=proposed;
-  ai(`<div class="nameProposal"><span class="nameScore">Propozycja robocza</span><strong>${esc(proposed)}</strong><p>${esc(nameReason(proposed))}. To jeszcze nie jest sprawdzenie dostępności domeny ani znaku towarowego — zrobimy je przed wyborem finalnej marki.</p></div>`,true);
+  const contextLabel=chat.data.industry||manualIndustryLabel(chat.data.businessBrief||'');
+  ai(`<div class="nameProposal"><span class="nameScore">Propozycja na podstawie opisu</span><strong>${esc(proposed)}</strong><p>${esc(nameReason(proposed))}. Kontekst: <b>${esc(contextLabel||'profil firmy')}</b>. To jeszcze nie jest sprawdzenie domeny ani znaku towarowego.</p></div>`,true);
   setTimeout(()=>addChips(['Tak, ta nazwa pasuje','Pokaż inną nazwę','Wpiszę własną nazwę'],handleNameChoice),200)
 }
     function handleNameChoice(choice){if(/tak/i.test(choice)){confirmValue('company',chat.lastSuggestedName);return}if(/inną/i.test(choice)){offerNameSuggestion(true);return}chat.phase='naming-custom';ai('Jasne. Wpisz własną nazwę firmy — zatrzymam się na tym kroku, dopóki jej nie zaakceptujesz.')}
@@ -422,7 +473,7 @@ form.addEventListener('submit',e=>{e.preventDefault();submitMessage();requestAni
     pet:[{servicesTitle:'Dobra opieka nad Twoim pupilem',servicesLead:'Zakres usługi dopasowany do zwierzęcia i jego potrzeb.',ctaTitle:'Jak możemy pomóc Twojemu pupilowi?',ctaLead:'Napisz gatunek, potrzebę i termin.',contactTitle:'Zapytaj o termin',contactLead:'Zostaw kontakt i kilka informacji.'}],
     food:[{servicesTitle:'Smak, który ma swój charakter',servicesLead:'Oferta podana jasno, z naciskiem na to, po co klienci wracają.',ctaTitle:'Chcesz zarezerwować lub zamówić?',ctaLead:'Napisz, czego potrzebujesz.',contactTitle:'Skontaktuj się',contactLead:'Zostaw kontakt lub szczegóły zamówienia.'}],
     fitness:[{servicesTitle:'Trening dopasowany do celu',servicesLead:'Najpierw cel i możliwości, potem konkretny plan działania.',ctaTitle:'Chcesz zacząć trenować?',ctaLead:'Napisz cel i dostępność.',contactTitle:'Umów konsultację',contactLead:'Zostaw kontakt i swój główny cel.'}],
-    general:[{servicesTitle:'Konkretnie o tym, co robimy',servicesLead:'Oferta opisana tak, żeby klient szybko wiedział, czy trafił dobrze.',ctaTitle:'Masz pytanie?',ctaLead:'Napisz, czego potrzebujesz.',contactTitle:'Zostaw kontakt',contactLead:'Wrócimy z konkretną odpowiedzią.'}]
+    general:[{servicesTitle:d.industry?`${d.industry} — konkretnie i bez lania wody`:'Konkretnie o tym, co robimy',servicesLead:d.services?`Najważniejsze usługi: ${normalizeServices(d.services).slice(0,3).join(', ')}.`:'Oferta opisana tak, żeby klient szybko wiedział, czy trafił dobrze.',ctaTitle:'Masz konkretną potrzebę?',ctaLead:d.industry?`Napisz, czego potrzebujesz w zakresie: ${d.industry.toLowerCase()}.`:'Napisz, czego potrzebujesz.',contactTitle:'Porozmawiajmy o Twojej potrzebie',contactLead:'Zostaw kontakt i krótki opis — wrócimy z konkretną odpowiedzią.'}]
   };
   const list=packs[cat]||packs.general;return list[n%list.length]
 }
@@ -492,7 +543,7 @@ form.addEventListener('submit',e=>{e.preventDefault();submitMessage();requestAni
     pet:['Dobra opieka dla Twojego pupila.','Twój pupil w dobrych rękach.','Usługa dopasowana do zwierzaka.'],
     food:['Smak, po który chce się wracać.','Dobre jedzenie. Prosty wybór.','Tu zaczyna się apetyt.'],
     fitness:['Trening z planem, nie przypadkiem.','Twój cel. Dobry plan. Regularny progres.','Forma budowana krok po kroku.'],
-    general:[`${d.company||'Twoja firma'}. Konkret zamiast obietnic.`,`${d.company||'Twoja firma'} — dobry efekt zaczyna się od dobrych ustaleń.`,`Usługa dopasowana do Ciebie, nie odwrotnie.`]
+    general:d.industry?[`${d.industry}. Konkretnie i po Twojemu.`,`${d.company||'Twoja firma'} — ${d.industry.toLowerCase()} bez zbędnego chaosu.`,`Potrzebujesz ${d.industry.toLowerCase()}? Zacznijmy od konkretów.`]:[`${d.company||'Twoja firma'}. Konkret zamiast obietnic.`,`${d.company||'Twoja firma'} — dobry efekt zaczyna się od dobrych ustaleń.`,`Usługa dopasowana do Ciebie, nie odwrotnie.`]
   };return pickCopy(d,variants[cat]||variants.general,'hero')
 }
     function heroLead(d){
@@ -559,6 +610,7 @@ form.addEventListener('submit',e=>{e.preventDefault();submitMessage();requestAni
       if(cat==='childcare')return `${name} zapewnia opiekę nad dziećmi w czasie, gdy rodzice są w pracy lub mają inne obowiązki. Stawiamy na bezpieczeństwo, dobrą komunikację z rodzicem i spokojną atmosferę dla dziecka. ${area}.`;
       if(cat==='build')return `${name} realizuje prace według ustalonego zakresu. Bez niedomówień, z jasnym kontaktem na każdym etapie. ${area}.`;
       if(cat==='transport')return `${name} organizuje przewóz sprawnie i konkretnie — trasa, termin i warunki są jasne od początku. ${area}.`;
+      if(d.industry)return `${name} działa w obszarze: ${d.industry.toLowerCase()}. Zakres ustalamy pod konkretną potrzebę klienta, a kolejne kroki komunikujemy jasno. ${d.services?`W ofercie m.in.: ${normalizeServices(d.services).slice(0,3).join(', ')}.`:''} ${area}.`;
       return `${name} stawia na jasne ustalenia, dobry kontakt i rozwiązania dopasowane do konkretnego zlecenia. ${area}.`
     }
     function trustItems(d){
