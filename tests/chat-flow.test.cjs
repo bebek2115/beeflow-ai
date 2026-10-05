@@ -5,7 +5,7 @@ const path=require('node:path');
 const vm=require('node:vm');
 
 // Small DOM stand-in for conversation state tests; this does not test browser layout.
-function createApp(){
+function createApp(options={}){
   let document;
   class Element{
     constructor(tag='div'){
@@ -58,8 +58,13 @@ function createApp(){
   let clock=0;
   const timers=[];
   const saved=new Map();
+  const browserWindow={innerWidth:390,innerHeight:844,addEventListener(){}};
+  if(options.smart){
+    browserWindow.BeeFlowChatCore=require('../chat-core.js');
+    browserWindow.BeeFlowAIClient={send:options.aiSend||(()=>Promise.reject(new Error('offline')))};
+  }
   const context=vm.createContext({
-    document,console,window:{innerWidth:390,innerHeight:844,addEventListener(){}},
+    document,console,window:browserWindow,
     location:{hash:'',pathname:'/',search:''},history:{replaceState(){}},
     setTimeout(fn,ms=0){timers.push({fn,time:clock+ms});return timers.length},
     requestAnimationFrame:fn=>fn(),
@@ -78,13 +83,14 @@ function createApp(){
     }
   };
   const send=(text,wait=true)=>{run(`submitMessage(${JSON.stringify(text)})`);if(wait)flush()};
+  const settle=async()=>{for(let i=0;i<8;i++){await Promise.resolve();flush()}};
   const buttons=()=>elements.get('msgs').querySelectorAll('.quick button, .confirmRow button');
   const click=text=>{
     const button=buttons().findLast(el=>el.textContent===text&&!el.disabled);
     assert.ok(button,`active button: ${text}`);button.click();flush();return button;
   };
   run('openMainChat()');flush();
-  return {run,flush,send,buttons,click,elements,document};
+  return {run,flush,send,settle,buttons,click,elements,document};
 }
 
 function reachIndustry(app,company='Czarnota'){
@@ -174,4 +180,17 @@ test('returning from the preview reopens the creator with its existing data',()=
   assert.equal(app.elements.get('chatBackdrop').getAttribute('aria-hidden'),'false');
   assert.equal(app.document.body.classList.contains('chat-open'),true);
   assert.equal(app.run('chat.data.company'),'Czarnota');
+});
+
+test('AI failure activates the legacy creator without losing fields extracted from the first message',async()=>{
+  const app=createApp({smart:true,aiSend:()=>Promise.reject(Object.assign(new Error('offline'),{code:'AI_UNAVAILABLE'}))});
+  assert.equal(app.run('chat.phase'),'router');
+  assert.equal(app.run('chat.pendingKey'),null);
+  app.send('Robię bramy i balustrady pod wymiar w Elblągu, nazwy jeszcze nie mam.',false);
+  await app.settle();
+  assert.equal(app.run('smartChat.legacyStarted'),true);
+  assert.equal(app.run('chat.data.city'),'Elbląg');
+  assert.equal(app.run('chat.data.services'),'Bramy na wymiar, Balustrady');
+  assert.equal(app.run('chat.needsName'),true);
+  assert.equal(app.run('chat.phase'),'naming');
 });

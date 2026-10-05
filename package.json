@@ -1,0 +1,9 @@
+{
+  "name": "beeflow-ai",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test --test-isolation=none",
+    "check": "node --check app.js && node --check ai-client.js && node --check chat-core.js && node --check api/ai.js && node --check api/_lib/ai-core.cjs"
+  }
+}
